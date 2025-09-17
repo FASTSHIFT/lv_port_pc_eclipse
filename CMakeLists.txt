@@ -1,96 +1,179 @@
 cmake_minimum_required(VERSION 3.10)
-project(lvgl)
+project(Simulator)
 
-option(LV_USE_DRAW_SDL "Use SDL draw unit" OFF)
-option(LV_USE_LIBPNG "Use libpng to decode PNG" OFF)
-option(LV_USE_LIBJPEG_TURBO "Use libjpeg turbo to decode JPEG" OFF)
-option(LV_USE_FFMPEG "Use libffmpeg to display video using lv_ffmpeg" OFF)
-option(LV_USE_FREETYPE "Use freetype lib" OFF)
+# C/C++ version
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_C_STANDARD 99)#C99 # lvgl officially support C99 and above
-set(CMAKE_CXX_STANDARD 17)#C17
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Platform config
+## Common
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+option(ENABLE_DEBUG "Enable debug build" ON)
 
-find_package(SDL2 REQUIRED SDL2)
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
-add_compile_definitions($<$<BOOL:${LV_USE_DRAW_SDL}>:LV_USE_DRAW_SDL=1>)
-add_compile_definitions($<$<BOOL:${LV_USE_LIBPNG}>:LV_USE_LIBPNG=1>)
-add_compile_definitions($<$<BOOL:${LV_USE_LIBJPEG_TURBO}>:LV_USE_LIBJPEG_TURBO=1>)
-add_compile_definitions($<$<BOOL:${LV_USE_FFMPEG}>:LV_USE_FFMPEG=1>)
+if(ENABLE_DEBUG)
+  message(STATUS "Build type: Debug")
+  add_definitions(-DDEBUG)
+  add_definitions(-DLV_USE_ASSERT=1)
+  set(CMAKE_BUILD_TYPE "Debug")
+  set(ENABLE_ASAN 1)
+else()
+  message(STATUS "Build type: Release")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
 
-add_subdirectory(lvgl)
-target_include_directories(lvgl PUBLIC ${PROJECT_SOURCE_DIR} ${SDL2_INCLUDE_DIRS})
+## Others
+if (WIN32)
+    message(STATUS "Platform: windows")
+    add_definitions(-DUSE_WIN32DRV=1)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Simulator)
+elseif (UNIX)
+    message(STATUS "Platform: UNIX")
 
-add_executable(main main.c mouse_cursor_icon.c)
+set(WARNING_FLAGS
+    "-Wall -Wextra\
+    -Wshadow -Wundef -Wmaybe-uninitialized -Wno-deprecated-declarations \
+    -Wno-unused-function -Wno-error=strict-prototypes -Wpointer-arith -fno-strict-aliasing -Wno-error=cpp -Wuninitialized \
+    -Wno-unused-parameter -Wno-missing-field-initializers -Wno-format-nonliteral -Wno-cast-qual -Wunreachable-code -Wno-switch-default  \
+    -Wreturn-type -Wmultichar -Wformat-security -Wno-ignored-qualifiers -Wno-error=pedantic -Wno-sign-compare -Wno-error=missing-prototypes -Wdouble-promotion -Wclobbered -Wdeprecated  \
+    -Wempty-body -Wshift-negative-value \
+    -Wtype-limits -Wsizeof-pointer-memaccess -Wpointer-arith -Wno-cast-function-type -Wunused-but-set-variable")
 
-target_compile_definitions(main PRIVATE LV_CONF_INCLUDE_SIMPLE)
-target_link_libraries(main lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES} m pthread)
-add_custom_target (run COMMAND ${EXECUTABLE_OUTPUT_PATH}/main DEPENDS main)
+set(WARNING_FLAGS "${WARNING_FLAGS} -Wno-shadow -Wno-unused-but-set-variable -Wno-double-promotion -Werror=narrowing -Werror=narrowing -Wunused-function")
 
-if(LV_USE_DRAW_SDL)
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-    # Need to install libsdl2-image-dev
-    # `sudo apt install libsdl2-image-dev`
-    # `brew install sdl2_image`
-    find_package(SDL2_image REQUIRED)
-    target_include_directories(lvgl PUBLIC ${SDL2_IMAGE_INCLUDE_DIRS})
-    target_link_libraries(main ${SDL2_IMAGE_LIBRARIES})
-endif(LV_USE_DRAW_SDL)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS}")
 
-if(LV_USE_LIBPNG)
-    find_package(PNG REQUIRED)
-    target_include_directories(lvgl PUBLIC ${PNG_INCLUDE_DIR})
-    target_link_libraries(main ${PNG_LIBRARY})
-endif(LV_USE_LIBPNG)
+# 32-bit build
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -m32")
 
-if(LV_USE_LIBJPEG_TURBO)
-    # Need to install libjpeg-turbo8-dev
-    # `sudo apt install libjpeg-turbo8-dev`
-    # `brew install libjpeg-turbo`
-    find_package(JPEG REQUIRED)
-    target_include_directories(lvgl PUBLIC ${JPEG_INCLUDE_DIRS})
-    target_link_libraries(main ${JPEG_LIBRARIES})
-endif(LV_USE_LIBJPEG_TURBO)
-
-if(LV_USE_FFMPEG)
-    target_link_libraries(main avformat avcodec avutil swscale)
-endif(LV_USE_FFMPEG)
-
-if(LV_USE_FREETYPE)
-    find_package(Freetype REQUIRED)
-    target_link_libraries(main ${FREETYPE_LIBRARIES})
-    target_include_directories(lvgl PUBLIC ${FREETYPE_INCLUDE_DIRS})
-endif(LV_USE_FREETYPE)
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(lvgl PRIVATE
-        -pedantic-errors
-        -Wall
-        -Wclobbered
-        -Wdeprecated
-        -Wdouble-promotion
-        -Wempty-body
-        -Wextra
-        -Wformat-security
-        -Wmaybe-uninitialized
-        # -Wmissing-prototypes
-        -Wpointer-arith
-        -Wmultichar
-        -Wno-pedantic # ignored for now, we convert functions to pointers for propertis table.
-        -Wreturn-type
-        -Wshadow
-        -Wshift-negative-value
-        -Wsizeof-pointer-memaccess
-        -Wtype-limits
-        -Wundef
-        -Wuninitialized
-        -Wunreachable-code
-        -Wfloat-conversion
-        -Wstrict-aliasing
+    find_package(SDL2 REQUIRED SDL2)
+    include_directories(
+            ${SDL2_INCLUDE_DIRS}
+        #     ${SDL2_INCLUDE_DIRS}/../
+        #     ${PROJECT_SOURCE_DIR}
     )
 
-    target_compile_options(main PRIVATE -fsanitize=address,leak,undefined)
-    target_link_options(main PRIVATE -fsanitize=address,leak,undefined)
-endif()
+    # Address Sanitizer
+    if (ENABLE_ASAN)
+        set(ASAN_FLAGS "-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fsanitize=leak")
+        message(STATUS "ASAN_FLAGS: ${ASAN_FLAGS}")
+        add_definitions(${ASAN_FLAGS})
+        set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${ASAN_FLAGS})
+    endif ()
+
+endif ()
+
+set(EXTERNAL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external)
+
+# Include
+include_directories(
+        ${PROJECT_SOURCE_DIR}
+)
+
+# Sources
+# file(GLOB EXAMPLE_SOURCES
+#         ${EXTERNAL_SOURCE_DIR}/example/*.c
+#         )
+
+## Freetype
+add_definitions(-DHAVE_UNISTD_H=1 -DHAVE_FCNTL_H=1)
+include_directories(${EXTERNAL_SOURCE_DIR}/freetype/include)
+add_definitions(
+        -DFT2_BUILD_LIBRARY
+        -DFT_CONFIG_MODULES_H=<lvgl/src/libs/freetype/ftmodule.h>
+        -DFT_CONFIG_OPTIONS_H=<lvgl/src/libs/freetype/ftoption.h>
+)
+add_subdirectory(${EXTERNAL_SOURCE_DIR}/freetype ${PROJECT_BINARY_DIR}/build_freetype)
+
+## libyuv
+# include_directories(${EXTERNAL_SOURCE_DIR}/libyuv/include)
+# add_subdirectory(${EXTERNAL_SOURCE_DIR}/libyuv ${PROJECT_BINARY_DIR}/build_libyuv)
+
+## ffmpeg
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libswscale libavutil)
+
+# include(FetchContent)
+# # Set policy to allow to run the target_link_libraries cmd on targets that are
+# # build in another directory. Currently, the linking is not handled by
+# cmake_policy(SET CMP0079 NEW)
+# # Fetch fastgltf library
+# FetchContent_Declare(
+#   fastgltf
+#   GIT_REPOSITORY https://github.com/spnda/fastgltf
+#   GIT_TAG 4e2261350888bae7c35a1f39991f6233d57795f5)
+# set(FASTGLTF_ENABLE_DEPRECATED_EXT
+#     ON
+#     CACHE BOOL "" FORCE)
+# set(FASTGLTF_DIFFUSE_TRANSMISSION_SUPPORT
+#     ON
+#     CACHE BOOL "" FORCE)
+# FetchContent_MakeAvailable(fastgltf)
+
+# # Fetch libwebp library
+# FetchContent_Declare(
+#   webp
+#   GIT_REPOSITORY https://github.com/webmproject/libwebp
+#   GIT_TAG fa6f56496a442eed59b103250021e4b14ebf1427)
+# FetchContent_MakeAvailable(webp)
+# include_directories(${PROJECT_SOURCE_DIR}/build/_deps/fastgltf-src/include)
+# include_directories(${PROJECT_SOURCE_DIR}/build/_deps/webp-src/src)
+
+set(SOURCES
+        # ${EXAMPLE_SOURCES}
+        )
+
+# Packages
+find_package(JPEG REQUIRED)
+include_directories(${JPEG_INCLUDE_DIR})
+
+find_package(PNG REQUIRED)
+include_directories(${PNG_INCLUDE_DIR})
+
+# OpenGL
+find_package(OpenGL REQUIRED)
+# find_package(GLUT REQUIRED)
+find_package(GLEW REQUIRED)
+find_package(glfw3 REQUIRED)
+
+# fastgltf
+# include_directories(${EXTERNAL_SOURCE_DIR}/fastgltf/include)
+# add_subdirectory(${EXTERNAL_SOURCE_DIR}/fastgltf ${PROJECT_BINARY_DIR}/build_fastgltf)
+
+# Subdirectory
+add_subdirectory(${PROJECT_SOURCE_DIR}/lvgl ${PROJECT_BINARY_DIR}/build_lvgl)
+# add_subdirectory(${EXTERNAL_SOURCE_DIR}/rlottie ${PROJECT_BINARY_DIR}/build_rlottie)
+
+# Executable
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+add_executable(Simulator main.c app_entry.cpp my_profiler.c ${SOURCES} ${INCLUDES})
+
+# Link
+target_link_libraries(
+        Simulator PRIVATE
+        stdc++
+        lvgl
+        lvgl::examples
+        lvgl::demos
+        lvgl::thorvg
+        freetype
+        m
+        ${OPENGL_LIBRARIES}
+        ${GLEW_LIBRARIES}
+        glfw
+        ${SDL2_LIBRARIES}
+        ${PNG_LIBRARIES}
+        ${JPEG_LIBRARIES}
+        ${FFMPEG_LIBRARIES}
+)
+
+set_target_properties(
+        Simulator
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build"
+)
