@@ -529,7 +529,7 @@
 
 /* Use VG-Lite Simulator.
  * - Requires: LV_USE_THORVG_INTERNAL or LV_USE_THORVG_EXTERNAL */
-#define LV_USE_VG_LITE_THORVG  1
+#define LV_USE_VG_LITE_THORVG  LV_USE_DRAW_VG_LITE
 
 #if LV_USE_VG_LITE_THORVG
     /** Enable LVGL's blend mode support */
@@ -1453,7 +1453,7 @@
     #endif
 
     /** Vector graphic demo */
-    #define LV_USE_DEMO_VECTOR_GRAPHIC  1
+    #define LV_USE_DEMO_VECTOR_GRAPHIC  LV_USE_VECTOR_GRAPHIC
 
     /** GLTF demo */
     #define LV_USE_DEMO_GLTF            0
