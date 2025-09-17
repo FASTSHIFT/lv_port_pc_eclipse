@@ -25,7 +25,7 @@ static int my_get_cpu_cb(void)
     return (int)syscall(SYS_getcpu);
 }
 
-extern "C" void my_profiler_init(void)
+void my_profiler_init(void)
 {
     lv_profiler_builtin_config_t config;
     lv_profiler_builtin_config_init(&config);
