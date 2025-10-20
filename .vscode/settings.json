@@ -9,6 +9,9 @@
         "stdio.h": "c",
         "format": "c",
         "time.h": "c",
-        "lvgl_private.h": "c"
+        "lvgl_private.h": "c",
+        "lv_draw_rect.h": "c",
+        "lv_draw_vector.h": "c",
+        "stdlib.h": "c"
     }
 }

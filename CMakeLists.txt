@@ -141,6 +141,21 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
 
+# DRM
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(DRM REQUIRED libdrm)
+include_directories(${DRM_INCLUDE_DIRS})
+
+# GBM
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GBM REQUIRED gbm)
+include_directories(${GBM_INCLUDE_DIRS})
+
+# EGL
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(EGL REQUIRED egl)
+include_directories(${EGL_INCLUDE_DIRS})
+
 # fastgltf
 # include_directories(${EXTERNAL_SOURCE_DIR}/fastgltf/include)
 # add_subdirectory(${EXTERNAL_SOURCE_DIR}/fastgltf ${PROJECT_BINARY_DIR}/build_fastgltf)
@@ -165,6 +180,9 @@ target_link_libraries(
         m
         ${OPENGL_LIBRARIES}
         ${GLEW_LIBRARIES}
+        ${DRM_LIBRARIES}
+        ${GBM_LIBRARIES}
+        ${EGL_LIBRARIES}
         glfw
         ${SDL2_LIBRARIES}
         ${PNG_LIBRARIES}

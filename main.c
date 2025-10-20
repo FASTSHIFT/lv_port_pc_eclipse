@@ -124,13 +124,27 @@ static lv_disp_t* hal_init(int32_t w, int32_t h)
     lv_indev_set_group(keyboard, lv_group_get_default());
 #endif
 
+#if LV_USE_LINUX_DRM
+    /* Create a DRM display */
+    lv_display_t *disp = lv_linux_drm_create();
+
+    const char * device_path = lv_linux_drm_find_device_path();
+
+    /* Set DRM device file and connector */
+    /* The 2nd argument is the DRM device path */
+    /* The 3rd argument is the connector_id (-1 = auto-select first available) */
+    lv_linux_drm_set_file(disp, device_path, -1);
+#endif
+
 #if LV_USE_OPENGLES
+#if LV_USE_GLFW
     /* create a window and initialize OpenGL */
     lv_opengles_window_t* window = lv_opengles_glfw_window_create(w, h, true);
 
     /* create a display that flushes to a texture */
     lv_display_t* disp = lv_opengles_window_display_create(window, w, h);
     lv_display_set_default(disp);
+#endif
 
 #if LV_USE_DRAW_NANOVG
     lv_display_set_render_mode(disp, LV_DISPLAY_RENDER_MODE_FULL);
