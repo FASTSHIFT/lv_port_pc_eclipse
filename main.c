@@ -9,6 +9,7 @@
  *********************/
 
 #include "lvgl/lvgl.h"
+#include "rpi_port/rpi_port.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -63,11 +64,6 @@ int main(int argc, char** argv)
     /*Initialize LVGL*/
     lv_init();
 
-#if LV_USE_PROFILER
-    void my_profiler_init(void);
-    my_profiler_init();
-#endif
-
     /*Create a default group for keyboard navigation*/
     lv_group_set_default(lv_group_create());
 
@@ -104,31 +100,19 @@ static lv_disp_t* hal_init(int32_t w, int32_t h)
 #if LV_USE_SDL
     lv_disp_t* disp = lv_sdl_window_create(w, h);
     lv_indev_t* mouse = lv_sdl_mouse_create();
-    // lv_display_set_rotation(disp, LV_DISP_ROTATION_90);
     lv_indev_set_group(mouse, lv_group_get_default());
-    lv_indev_set_disp(mouse, disp);
-
-#if 0
-     LV_IMG_DECLARE(mouse_cursor_icon); /*Declare the image file.*/
-     lv_obj_t* cursor_obj;
-     cursor_obj = lv_img_create(lv_scr_act()); /*Create an image object for the cursor */
-     lv_img_set_src(cursor_obj, &mouse_cursor_icon); /*Set the image source*/
-     lv_indev_set_cursor(mouse, cursor_obj); /*Connect the image  object to the driver*/
-#endif
-    // lv_indev_t* mousewheel = lv_sdl_mousewheel_create();
-    // lv_indev_set_disp(mousewheel, disp);
-    // lv_indev_set_group(mousewheel, lv_group_get_default());
+    lv_indev_set_display(mouse, disp);
 
     lv_indev_t* keyboard = lv_sdl_keyboard_create();
-    lv_indev_set_disp(keyboard, disp);
+    lv_indev_set_display(keyboard, disp);
     lv_indev_set_group(keyboard, lv_group_get_default());
 #endif
 
 #if LV_USE_LINUX_DRM
     /* Create a DRM display */
-    lv_display_t *disp = lv_linux_drm_create();
+    lv_display_t* disp = lv_linux_drm_create();
 
-    const char * device_path = lv_linux_drm_find_device_path();
+    const char* device_path = lv_linux_drm_find_device_path();
 
     /* Set DRM device file and connector */
     /* The 2nd argument is the DRM device path */
@@ -146,12 +130,6 @@ static lv_disp_t* hal_init(int32_t w, int32_t h)
     lv_display_set_default(disp);
 #endif
 
-#if LV_USE_DRAW_NANOVG
-    lv_display_set_render_mode(disp, LV_DISPLAY_RENDER_MODE_FULL);
-    // lv_display_set_matrix_rotation(disp, true);
-    // lv_display_set_rotation(disp, LV_DISP_ROTATION_180);
-#endif
-
 #if LV_USE_DRAW_OPENGLES
     /* add the texture to the window */
     unsigned int texture_id = lv_opengles_texture_get_texture_id(disp);
@@ -162,6 +140,10 @@ static lv_disp_t* hal_init(int32_t w, int32_t h)
     lv_indev_set_group(mouse, lv_group_get_default());
     lv_indev_set_display(mouse, disp);
 #endif
+#endif
+
+#ifdef LV_USE_RPI_PORT
+    rpi_port_init(w, h);
 #endif
 
     return NULL;

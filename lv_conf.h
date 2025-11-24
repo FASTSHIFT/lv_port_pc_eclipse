@@ -985,7 +985,9 @@
 #define LV_USE_BARCODE 0
 
 /** FreeType library */
-#define LV_USE_FREETYPE 1
+#ifndef LV_USE_FREETYPE
+#define LV_USE_FREETYPE 0
+#endif
 #if LV_USE_FREETYPE
     /** Let FreeType use LVGL memory and file porting */
     #define LV_FREETYPE_USE_LVGL_PORT 0
@@ -1016,7 +1018,7 @@
 
 /** Enable ThorVG (vector graphics library) from the src/libs folder.
  *  Requires LV_USE_VECTOR_GRAPHIC */
-#define LV_USE_THORVG_INTERNAL 1
+#define LV_USE_THORVG_INTERNAL 0
 
 /** Enable ThorVG by assuming that its installed and linked to the project
  *  Requires LV_USE_VECTOR_GRAPHIC */
@@ -1226,7 +1228,9 @@
  *==================*/
 
 /** Use SDL to open window on PC and handle mouse and keyboard. */
+#ifndef LV_USE_SDL
 #define LV_USE_SDL              1
+#endif
 #if LV_USE_SDL
     #define LV_SDL_INCLUDE_PATH     <SDL2/SDL.h>
     #define LV_SDL_RENDER_MODE      LV_DISPLAY_RENDER_MODE_FULL   /**< LV_DISPLAY_RENDER_MODE_DIRECT is recommended for best performance */

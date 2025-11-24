@@ -5,10 +5,11 @@ project(Simulator)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 
-# Platform config
-## Common
+# Platform config Common
 
-option(ENABLE_DEBUG "Enable debug build" ON)
+option(ENABLE_DEBUG "Enable debug build" OFF)
+option(ENABLE_RPI_PORT "Enable Raspberry Pi port" OFF)
+option(ENABLE_FREETYPE "Enable freetype library" OFF)
 
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
@@ -24,14 +25,31 @@ else()
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-## Others
-if (WIN32)
-    message(STATUS "Platform: windows")
-    add_definitions(-DUSE_WIN32DRV=1)
-    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Simulator)
-elseif (UNIX)
-    message(STATUS "Platform: UNIX")
+if(ENABLE_RPI_PORT)
+  message(STATUS "Raspberry Pi port enabled")
+  add_definitions(-D__VCCOREVER__=0 -DLV_USE_RPI_PORT=1 -DLV_USE_SDL=0)
 
+  # Set cross-compilation toolchain using find_program
+  find_program(RPI_C_COMPILER arm-linux-gnueabihf-gcc)
+  find_program(RPI_CXX_COMPILER arm-linux-gnueabihf-g++)
+  if(NOT RPI_C_COMPILER OR NOT RPI_CXX_COMPILER)
+    message(
+      FATAL_ERROR
+        "Could not find RPI cross-compiler tools. Please ensure they are in PATH"
+    )
+  endif()
+  set(CMAKE_C_COMPILER
+      ${RPI_C_COMPILER}
+      CACHE FILEPATH "C compiler" FORCE)
+  set(CMAKE_CXX_COMPILER
+      ${RPI_CXX_COMPILER}
+      CACHE FILEPATH "C++ compiler" FORCE)
+
+  # Add RPI specific library paths
+  link_directories(${PROJECT_SOURCE_DIR}/rpi_port/vc/lib)
+endif()
+
+# Warning flags
 set(WARNING_FLAGS
     "-Wall -Wextra\
     -Wshadow -Wundef -Wmaybe-uninitialized -Wno-deprecated-declarations \
@@ -39,159 +57,107 @@ set(WARNING_FLAGS
     -Wno-unused-parameter -Wno-missing-field-initializers -Wno-format-nonliteral -Wno-cast-qual -Wunreachable-code -Wno-switch-default  \
     -Wreturn-type -Wmultichar -Wformat-security -Wno-ignored-qualifiers -Wno-error=pedantic -Wno-sign-compare -Wno-error=missing-prototypes -Wdouble-promotion -Wclobbered -Wdeprecated  \
     -Wempty-body -Wshift-negative-value \
-    -Wtype-limits -Wsizeof-pointer-memaccess -Wpointer-arith -Wno-cast-function-type -Wunused-but-set-variable")
-
-set(WARNING_FLAGS "${WARNING_FLAGS} -Wno-shadow -Wno-unused-but-set-variable -Wno-double-promotion -Werror=narrowing -Werror=narrowing -Wunused-function")
+    -Wtype-limits -Wsizeof-pointer-memaccess -Wpointer-arith -Wno-cast-function-type -Wunused-but-set-variable"
+)
+set(WARNING_FLAGS
+    "${WARNING_FLAGS} -Wno-shadow -Wno-unused-but-set-variable -Wno-double-promotion -Werror=narrowing -Werror=narrowing -Wunused-function"
+)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS}")
 
-# 32-bit build
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
-# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -m32")
-
-    find_package(SDL2 REQUIRED SDL2)
-    include_directories(
-            ${SDL2_INCLUDE_DIRS}
-        #     ${SDL2_INCLUDE_DIRS}/../
-        #     ${PROJECT_SOURCE_DIR}
-    )
-
-    # Address Sanitizer
-    if (ENABLE_ASAN)
-        set(ASAN_FLAGS "-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fsanitize=leak")
-        message(STATUS "ASAN_FLAGS: ${ASAN_FLAGS}")
-        add_definitions(${ASAN_FLAGS})
-        set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${ASAN_FLAGS})
-    endif ()
-
-endif ()
+# Address Sanitizer
+if(ENABLE_ASAN)
+  set(ASAN_FLAGS
+      "-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fsanitize=leak"
+  )
+  message(STATUS "ASAN_FLAGS: ${ASAN_FLAGS}")
+  add_definitions(${ASAN_FLAGS})
+  set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${ASAN_FLAGS})
+endif()
 
 set(EXTERNAL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external)
 
 # Include
-include_directories(
-        ${PROJECT_SOURCE_DIR}
-)
+include_directories(${PROJECT_SOURCE_DIR})
 
-# Sources
-# file(GLOB EXAMPLE_SOURCES
-#         ${EXTERNAL_SOURCE_DIR}/example/*.c
-#         )
+# Sources file(GLOB EXAMPLE_SOURCES ${EXTERNAL_SOURCE_DIR}/example/*.c )
 
-## Freetype
-add_definitions(-DHAVE_UNISTD_H=1 -DHAVE_FCNTL_H=1)
-include_directories(${EXTERNAL_SOURCE_DIR}/freetype/include)
-add_definitions(
-        -DFT2_BUILD_LIBRARY
-        -DFT_CONFIG_MODULES_H=<lvgl/src/libs/freetype/ftmodule.h>
-        -DFT_CONFIG_OPTIONS_H=<lvgl/src/libs/freetype/ftoption.h>
-)
-add_subdirectory(${EXTERNAL_SOURCE_DIR}/freetype ${PROJECT_BINARY_DIR}/build_freetype)
+if(ENABLE_FREETYPE)
+  # Freetype
+  add_definitions(-DLV_USE_FREETYPE=1)
+  include_directories(${EXTERNAL_SOURCE_DIR}/freetype/include)
+  add_definitions(
+    -DHAVE_UNISTD_H=1 -DHAVE_FCNTL_H=1 -DFT2_BUILD_LIBRARY
+    -DFT_CONFIG_MODULES_H=<lvgl/src/libs/freetype/ftmodule.h>
+    -DFT_CONFIG_OPTIONS_H=<lvgl/src/libs/freetype/ftoption.h>)
+  add_subdirectory(${EXTERNAL_SOURCE_DIR}/freetype
+                   ${PROJECT_BINARY_DIR}/build_freetype)
+endif()
 
-## libyuv
-# include_directories(${EXTERNAL_SOURCE_DIR}/libyuv/include)
-# add_subdirectory(${EXTERNAL_SOURCE_DIR}/libyuv ${PROJECT_BINARY_DIR}/build_libyuv)
+if(ENABLE_RPI_PORT)
+  include_directories(${PROJECT_SOURCE_DIR}/rpi_port/vc/include)
 
-## ffmpeg
-# find_package(PkgConfig REQUIRED)
-# pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libswscale libavutil)
+  set(SOURCES ${SOURCES} ${PROJECT_SOURCE_DIR}/rpi_port/rpi_port.c)
 
-# include(FetchContent)
-# # Set policy to allow to run the target_link_libraries cmd on targets that are
-# # build in another directory. Currently, the linking is not handled by
-# cmake_policy(SET CMP0079 NEW)
-# # Fetch fastgltf library
-# FetchContent_Declare(
-#   fastgltf
-#   GIT_REPOSITORY https://github.com/spnda/fastgltf
-#   GIT_TAG 4e2261350888bae7c35a1f39991f6233d57795f5)
-# set(FASTGLTF_ENABLE_DEPRECATED_EXT
-#     ON
-#     CACHE BOOL "" FORCE)
-# set(FASTGLTF_DIFFUSE_TRANSMISSION_SUPPORT
-#     ON
-#     CACHE BOOL "" FORCE)
-# FetchContent_MakeAvailable(fastgltf)
+  # RPI specific libraries
+  set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host)
+else()
+  find_package(SDL2 REQUIRED)
+  include_directories(${SDL2_INCLUDE_DIRS})
 
-# # Fetch libwebp library
-# FetchContent_Declare(
-#   webp
-#   GIT_REPOSITORY https://github.com/webmproject/libwebp
-#   GIT_TAG fa6f56496a442eed59b103250021e4b14ebf1427)
-# FetchContent_MakeAvailable(webp)
-# include_directories(${PROJECT_SOURCE_DIR}/build/_deps/fastgltf-src/include)
-# include_directories(${PROJECT_SOURCE_DIR}/build/_deps/webp-src/src)
+  find_package(JPEG REQUIRED)
+  include_directories(${JPEG_INCLUDE_DIR})
 
-set(SOURCES
-        # ${EXAMPLE_SOURCES}
-        )
+  find_package(PNG REQUIRED)
+  include_directories(${PNG_INCLUDE_DIR})
 
-# Packages
-find_package(JPEG REQUIRED)
-include_directories(${JPEG_INCLUDE_DIR})
+  # OpenGL
+  find_package(OpenGL REQUIRED)
+  find_package(GLEW REQUIRED)
+  find_package(glfw3 REQUIRED)
 
-find_package(PNG REQUIRED)
-include_directories(${PNG_INCLUDE_DIR})
+  # DRM
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(DRM REQUIRED libdrm)
+  include_directories(${DRM_INCLUDE_DIRS})
 
-# OpenGL
-find_package(OpenGL REQUIRED)
-# find_package(GLUT REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(glfw3 REQUIRED)
+  # GBM
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(GBM REQUIRED gbm)
+  include_directories(${GBM_INCLUDE_DIRS})
 
-# DRM
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(DRM REQUIRED libdrm)
-include_directories(${DRM_INCLUDE_DIRS})
+  # EGL
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(EGL REQUIRED egl)
+  include_directories(${EGL_INCLUDE_DIRS})
 
-# GBM
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GBM REQUIRED gbm)
-include_directories(${GBM_INCLUDE_DIRS})
-
-# EGL
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(EGL REQUIRED egl)
-include_directories(${EGL_INCLUDE_DIRS})
-
-# fastgltf
-# include_directories(${EXTERNAL_SOURCE_DIR}/fastgltf/include)
-# add_subdirectory(${EXTERNAL_SOURCE_DIR}/fastgltf ${PROJECT_BINARY_DIR}/build_fastgltf)
+endif()
 
 # Subdirectory
 add_subdirectory(${PROJECT_SOURCE_DIR}/lvgl ${PROJECT_BINARY_DIR}/build_lvgl)
-# add_subdirectory(${EXTERNAL_SOURCE_DIR}/rlottie ${PROJECT_BINARY_DIR}/build_rlottie)
 
 # Executable
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-add_executable(Simulator main.c app_entry.cpp my_profiler.c ${SOURCES} ${INCLUDES})
+add_executable(Simulator main.c app_entry.cpp ${SOURCES} ${INCLUDES})
 
 # Link
 target_link_libraries(
-        Simulator PRIVATE
-        stdc++
-        lvgl
-        lvgl::examples
-        lvgl::demos
-        lvgl::thorvg
-        freetype
-        m
-        ${OPENGL_LIBRARIES}
-        ${GLEW_LIBRARIES}
-        ${DRM_LIBRARIES}
-        ${GBM_LIBRARIES}
-        ${EGL_LIBRARIES}
-        glfw
-        ${SDL2_LIBRARIES}
-        ${PNG_LIBRARIES}
-        ${JPEG_LIBRARIES}
-        ${FFMPEG_LIBRARIES}
-)
+  Simulator
+  PRIVATE stdc++
+          lvgl
+          lvgl::examples
+          lvgl::demos
+          lvgl::thorvg
+          $<$<BOOL:${ENABLE_FREETYPE}>:freetype::freetype>
+          ${RPI_LIBS}
+          ${OPENGL_LIBRARIES}
+          ${GLEW_LIBRARIES}
+          ${DRM_LIBRARIES}
+          ${GBM_LIBRARIES}
+          ${EGL_LIBRARIES}
+          ${SDL2_LIBRARIES}
+          ${PNG_LIBRARIES})
 
-set_target_properties(
-        Simulator
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build"
-)
+set_target_properties(Simulator PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+                                           "${PROJECT_SOURCE_DIR}/build")
