@@ -19,6 +19,7 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <GLES2/gl2.h>
 #include <bcm_host.h>
 #include <stdio.h>
 
@@ -185,6 +186,14 @@ static int init_egl(uint32_t width, uint32_t height)
     }
 
     LV_LOG_USER("EGL initialized successfully");
+
+    const char* renderer = (const char*)glGetString(GL_RENDERER);
+    const char* version = (const char*)glGetString(GL_VERSION);
+    const char* vendor = (const char*)glGetString(GL_VENDOR);
+
+    LV_LOG_USER("OpenGL ES Renderer: %s", renderer);
+    LV_LOG_USER("OpenGL ES Version: %s", version);
+    LV_LOG_USER("OpenGL ES Vendor: %s", vendor);
 
     return 0;
 }
