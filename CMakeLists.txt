@@ -45,8 +45,17 @@ if(ENABLE_RPI_PORT)
       ${RPI_CXX_COMPILER}
       CACHE FILEPATH "C++ compiler" FORCE)
 
-  # Add RPI specific library paths
-  link_directories(${PROJECT_SOURCE_DIR}/rpi_port/vc/lib)
+  # Add RPI specific library paths - try system location first
+  find_library(BCM_HOST_LIB bcm_host PATHS /opt/vc/lib)
+  if(BCM_HOST_LIB)
+    message(STATUS "BCM_HOST_LIB found at ${BCM_HOST_LIB}")
+    link_directories(/opt/vc/lib)
+    set(VC_INCLUDE_DIR /opt/vc/include)
+  else()
+    message(STATUS "BCM_HOST_LIB not found, using custom location")
+    link_directories(${PROJECT_SOURCE_DIR}/rpi_port/vc/lib)
+    set(VC_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/rpi_port/vc/include)
+  endif()
 endif()
 
 # Warning flags
@@ -96,7 +105,7 @@ if(ENABLE_FREETYPE)
 endif()
 
 if(ENABLE_RPI_PORT)
-  include_directories(${PROJECT_SOURCE_DIR}/rpi_port/vc/include)
+  include_directories(${VC_INCLUDE_DIR})
 
   set(SOURCES ${SOURCES} ${PROJECT_SOURCE_DIR}/rpi_port/rpi_port.c)
 
