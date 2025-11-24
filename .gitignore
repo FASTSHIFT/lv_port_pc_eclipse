@@ -9,3 +9,4 @@ demo
 build/
 bin/
 cmake/
+.vscode/settings.json
