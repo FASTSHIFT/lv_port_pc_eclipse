@@ -66,7 +66,7 @@ int main(int argc, const char** argv)
     /*Initialize LVGL*/
     lv_init();
 
-    int width = 480;
+    int width = 640;
     int height = 480;
     const char* demo_name = "widgets";
     const char* touchdev = NULL;
