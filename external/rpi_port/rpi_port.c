@@ -10,6 +10,7 @@
 #ifdef LV_USE_RPI_PORT
 
 #include "lvgl/lvgl.h"
+#include "lvgl/src/draw/nanovg/lv_draw_nanovg.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <bcm_host.h>
@@ -35,6 +36,7 @@ static int init_egl(uint32_t width, uint32_t height);
  **********************/
 
 static EGLDisplay display;
+static EGLSurface surface;
 
 /**********************
  *      MACROS
@@ -44,11 +46,45 @@ static EGLDisplay display;
  *   GLOBAL FUNCTIONS
  **********************/
 
+static void flush_cb(lv_display_t* disp, const lv_area_t* area, uint8_t* px_map)
+{
+    if (lv_display_flush_is_last(disp)) {
+        eglSwapBuffers(display, surface);
+    }
+
+    lv_display_flush_ready(disp);
+}
+
 int rpi_port_init(uint32_t width, uint32_t height)
 {
     LV_LOG_USER("width: %" LV_PRIu32 ", height: %" LV_PRIu32, width, height);
     lv_tick_set_cb(get_tick_ms);
-    return init_egl(width, height);
+
+    int ret = init_egl(width, height);
+    if (ret < 0) {
+        return ret;
+    }
+
+    lv_draw_buf_t* draw_buf = lv_draw_buf_create(width, height, LV_COLOR_FORMAT_ARGB8888, LV_STRIDE_AUTO);
+    LV_ASSERT_NULL(draw_buf);
+    if (!draw_buf) {
+        LV_LOG_ERROR("Failed to create draw buffer");
+        return -1;
+    }
+
+    lv_display_t* disp = lv_display_create(width, height);
+    lv_display_set_render_mode(disp, LV_DISPLAY_RENDER_MODE_FULL);
+    lv_display_set_flush_cb(disp, flush_cb);
+    lv_display_set_draw_buffers(disp, draw_buf, NULL);
+
+#if LV_USE_DRAW_NANOVG
+    lv_draw_nanovg_init();
+    lv_display_set_render_mode(disp, LV_DISPLAY_RENDER_MODE_FULL);
+#else
+    lv_display_set_render_mode(disp, LV_DISPLAY_RENDER_MODE_DIRECT);
+#endif
+
+    return 0;
 }
 
 /**********************
@@ -65,7 +101,6 @@ static uint32_t get_tick_ms(void)
 static int init_egl(uint32_t width, uint32_t height)
 {
     static EGL_DISPMANX_WINDOW_T nativewindow;
-    static EGLSurface surface;
     static EGLContext context;
 
     bcm_host_init();
