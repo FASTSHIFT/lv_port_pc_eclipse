@@ -69,6 +69,7 @@ int main(int argc, const char** argv)
     int width = 480;
     int height = 480;
     const char* demo_name = "widgets";
+    const char* touchdev = NULL;
 
     struct {
         const char* name;
@@ -91,6 +92,7 @@ int main(int argc, const char** argv)
         OPT_INTEGER(0, "width", &width, "Set display width", NULL, 0, 0),
         OPT_INTEGER(0, "height", &height, "Set display height", NULL, 0, 0),
         OPT_STRING('d', "demo", &demo_name, "Set demo name", NULL, 0, 0),
+        OPT_STRING('t', "touch", &touchdev, "Set touch device", NULL, 0, 0),
         OPT_END(),
     };
 
@@ -107,6 +109,15 @@ int main(int argc, const char** argv)
 
     /*Initialize the HAL (display, input devices, tick) for LVGL*/
     hal_init(width, height);
+
+    if (touchdev) {
+        lv_indev_t* indev = lv_evdev_create(LV_INDEV_TYPE_POINTER, touchdev);
+        if (indev) {
+            lv_indev_set_display(indev, lv_display_get_default());
+        } else {
+            LV_LOG_WARN("Failed to create evdev input device for %s", touchdev);
+        }
+    }
 
     for (int i = 0; i < sizeof(demo_funcs) / sizeof(demo_funcs[0]); i++) {
         if (!demo_funcs[i].name) {
@@ -159,9 +170,9 @@ static lv_disp_t* hal_init(int32_t w, int32_t h)
 {
 #if LV_USE_SDL
     lv_disp_t* disp = lv_sdl_window_create(w, h);
-    lv_indev_t* mouse = lv_sdl_mouse_create();
-    lv_indev_set_group(mouse, lv_group_get_default());
-    lv_indev_set_display(mouse, disp);
+    // lv_indev_t* mouse = lv_sdl_mouse_create();
+    // lv_indev_set_group(mouse, lv_group_get_default());
+    // lv_indev_set_display(mouse, disp);
 
     lv_indev_t* keyboard = lv_sdl_keyboard_create();
     lv_indev_set_display(keyboard, disp);
