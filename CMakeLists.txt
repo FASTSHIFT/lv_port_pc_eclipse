@@ -25,25 +25,11 @@ else()
   set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+set(EXTERNAL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external)
+
 if(ENABLE_RPI_PORT)
   message(STATUS "Raspberry Pi port enabled")
-  add_definitions(-D__VCCOREVER__=0 -DLV_USE_RPI_PORT=1 -DLV_USE_SDL=0)
-
-  # Set cross-compilation toolchain using find_program
-  find_program(RPI_C_COMPILER arm-linux-gnueabihf-gcc)
-  find_program(RPI_CXX_COMPILER arm-linux-gnueabihf-g++)
-  if(NOT RPI_C_COMPILER OR NOT RPI_CXX_COMPILER)
-    message(
-      FATAL_ERROR
-        "Could not find RPI cross-compiler tools. Please ensure they are in PATH"
-    )
-  endif()
-  set(CMAKE_C_COMPILER
-      ${RPI_C_COMPILER}
-      CACHE FILEPATH "C compiler" FORCE)
-  set(CMAKE_CXX_COMPILER
-      ${RPI_CXX_COMPILER}
-      CACHE FILEPATH "C++ compiler" FORCE)
+  add_definitions(-DLV_USE_RPI_PORT=1 -DLV_USE_SDL=0)
 
   # Add RPI specific library paths - try system location first
   find_library(BCM_HOST_LIB bcm_host PATHS /opt/vc/lib)
@@ -53,8 +39,25 @@ if(ENABLE_RPI_PORT)
     set(VC_INCLUDE_DIR /opt/vc/include)
   else()
     message(STATUS "BCM_HOST_LIB not found, using custom location")
-    link_directories(${PROJECT_SOURCE_DIR}/rpi_port/vc/lib)
-    set(VC_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/rpi_port/vc/include)
+    add_definitions(-D__VCCOREVER__=0)
+    link_directories(${EXTERNAL_SOURCE_DIR}/rpi_port/vc/lib)
+    set(VC_INCLUDE_DIR ${EXTERNAL_SOURCE_DIR}/rpi_port/vc/include)
+
+    # Set cross-compilation toolchain using find_program
+    find_program(RPI_C_COMPILER arm-linux-gnueabihf-gcc)
+    find_program(RPI_CXX_COMPILER arm-linux-gnueabihf-g++)
+    if(NOT RPI_C_COMPILER OR NOT RPI_CXX_COMPILER)
+      message(
+        FATAL_ERROR
+          "Could not find RPI cross-compiler tools. Please ensure they are in PATH"
+      )
+    endif()
+    set(CMAKE_C_COMPILER
+        ${RPI_C_COMPILER}
+        CACHE FILEPATH "C compiler" FORCE)
+    set(CMAKE_CXX_COMPILER
+        ${RPI_CXX_COMPILER}
+        CACHE FILEPATH "C++ compiler" FORCE)
   endif()
 endif()
 
@@ -85,12 +88,11 @@ if(ENABLE_ASAN)
   set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${ASAN_FLAGS})
 endif()
 
-set(EXTERNAL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external)
-
 # Include
 include_directories(${PROJECT_SOURCE_DIR})
 
-# Sources file(GLOB EXAMPLE_SOURCES ${EXTERNAL_SOURCE_DIR}/example/*.c )
+# Sources
+set(SOURCES ${SOURCES} ${EXTERNAL_SOURCE_DIR}/argparse/argparse.c)
 
 if(ENABLE_FREETYPE)
   # Freetype
@@ -107,7 +109,7 @@ endif()
 if(ENABLE_RPI_PORT)
   include_directories(${VC_INCLUDE_DIR})
 
-  set(SOURCES ${SOURCES} ${PROJECT_SOURCE_DIR}/rpi_port/rpi_port.c)
+  set(SOURCES ${SOURCES} ${EXTERNAL_SOURCE_DIR}/rpi_port/rpi_port.c)
 
   # RPI specific libraries
   set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host)
@@ -148,7 +150,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/lvgl ${PROJECT_BINARY_DIR}/build_lvgl)
 
 # Executable
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-add_executable(Simulator main.c app_entry.cpp ${SOURCES} ${INCLUDES})
+add_executable(Simulator main.c ${SOURCES} ${INCLUDES})
 
 # Link
 target_link_libraries(

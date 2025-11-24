@@ -8,8 +8,10 @@
  *      INCLUDES
  *********************/
 
+#include "external/argparse/argparse.h"
+#include "external/rpi_port/rpi_port.h"
+#include "lvgl/demos/lv_demos.h"
 #include "lvgl/lvgl.h"
-#include "rpi_port/rpi_port.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -59,27 +61,85 @@ static lv_disp_t* hal_init(int32_t w, int32_t h);
  *   GLOBAL FUNCTIONS
  **********************/
 
-int main(int argc, char** argv)
+int main(int argc, const char** argv)
 {
     /*Initialize LVGL*/
     lv_init();
+
+    int width = 480;
+    int height = 480;
+    const char* demo_name = "widgets";
+
+    struct {
+        const char* name;
+        void (*func)(void);
+    } demo_funcs[] = {
+#if LV_USE_DEMO_WIDGETS
+        { "widgets", lv_demo_widgets },
+#endif
+#if LV_USE_DEMO_BENCHMARK
+        { "benchmark", lv_demo_benchmark },
+#endif
+#if LV_USE_DEMO_VECTOR_GRAPHIC
+        { "vector_graphic", lv_demo_vector_graphic_buffered },
+#endif
+        { NULL, NULL }
+    };
+
+    struct argparse_option options[] = {
+        OPT_HELP(),
+        OPT_INTEGER(0, "width", &width, "Set display width", NULL, 0, 0),
+        OPT_INTEGER(0, "height", &height, "Set display height", NULL, 0, 0),
+        OPT_STRING('d', "demo", &demo_name, "Set demo name", NULL, 0, 0),
+        OPT_END(),
+    };
+
+    struct argparse argparse;
+    argparse_init(&argparse, options, NULL, 0);
+    if (argparse_parse(&argparse, argc, argv) > 0) {
+        LV_LOG_WARN("argparse failed");
+        lv_deinit();
+        return -1;
+    }
 
     /*Create a default group for keyboard navigation*/
     lv_group_set_default(lv_group_create());
 
     /*Initialize the HAL (display, input devices, tick) for LVGL*/
-    hal_init(800, 600);
+    hal_init(width, height);
 
-    extern int app_entry(int argc, char** argv);
-    int ret = app_entry(argc, argv);
-    if (ret < 0) {
-        return ret;
+    for (int i = 0; i < sizeof(demo_funcs) / sizeof(demo_funcs[0]); i++) {
+        if (!demo_funcs[i].name) {
+            LV_LOG_WARN("Demo '%s' not found", demo_name);
+
+            for (int j = 0; j < sizeof(demo_funcs) / sizeof(demo_funcs[0]); j++) {
+                if (demo_funcs[j].name) {
+                    LV_LOG_WARN("  Available demo: %s", demo_funcs[j].name);
+                }
+            }
+
+            lv_deinit();
+            return -1;
+        }
+
+        if (lv_strcmp(demo_name, demo_funcs[i].name) == 0) {
+            demo_funcs[i].func();
+            break;
+        }
     }
 
     while (1) {
         uint32_t time_till_next = lv_timer_handler();
+
+        if (time_till_next == LV_NO_TIMER_READY) {
+            time_till_next = LV_DEF_REFR_PERIOD;
+        }
+
         if (time_till_next) {
-            usleep(time_till_next * 1000);
+            if (usleep(time_till_next * 1000) != 0) {
+                LV_LOG_ERROR("usleep error");
+                break;
+            }
         }
     }
 

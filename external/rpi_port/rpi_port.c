@@ -46,6 +46,7 @@ static EGLDisplay display;
 
 int rpi_port_init(uint32_t width, uint32_t height)
 {
+    LV_LOG_USER("width: %" LV_PRIu32 ", height: %" LV_PRIu32, width, height);
     lv_tick_set_cb(get_tick_ms);
     return init_egl(width, height);
 }
@@ -71,12 +72,14 @@ static int init_egl(uint32_t width, uint32_t height)
 
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (display == EGL_NO_DISPLAY) {
-        printf("Failed to get EGL display: %d\n", eglGetError());
+        LV_LOG_ERROR("Failed to get EGL display: %d", eglGetError());
         return -1;
     }
 
+    LV_LOG_USER("EGL display: %p", display);
+
     if (!eglInitialize(display, NULL, NULL)) {
-        printf("Failed to initialize EGL: %d\n", eglGetError());
+        LV_LOG_ERROR("Failed to initialize EGL: %d", eglGetError());
         return -1;
     }
 
@@ -93,7 +96,7 @@ static int init_egl(uint32_t width, uint32_t height)
     EGLConfig config;
     EGLint num_configs;
     if (!eglChooseConfig(display, attribs, &config, 1, &num_configs)) {
-        printf("Failed to choose EGL config: %d\n", eglGetError());
+        LV_LOG_ERROR("Failed to choose EGL config: %d", eglGetError());
         return -1;
     }
 
@@ -104,9 +107,11 @@ static int init_egl(uint32_t width, uint32_t height)
 
     context = eglCreateContext(display, config, EGL_NO_CONTEXT, context_attribs);
     if (context == EGL_NO_CONTEXT) {
-        printf("Failed to create EGL context: %d\n", eglGetError());
+        LV_LOG_ERROR("Failed to create EGL context: %d", eglGetError());
         return -1;
     }
+
+    LV_LOG_USER("EGL context: %p", context);
 
     // Create dispmanx window
     VC_RECT_T dst_rect = { 0, 0, width, height };
@@ -127,14 +132,18 @@ static int init_egl(uint32_t width, uint32_t height)
 
     surface = eglCreateWindowSurface(display, config, &nativewindow, NULL);
     if (surface == EGL_NO_SURFACE) {
-        printf("Failed to create EGL surface: %d\n", eglGetError());
+        LV_LOG_ERROR("Failed to create EGL surface: %d", eglGetError());
         return -1;
     }
 
+    LV_LOG_USER("EGL surface: %p", surface);
+
     if (!eglMakeCurrent(display, surface, surface, context)) {
-        printf("Failed to make EGL context current: %d\n", eglGetError());
+        LV_LOG_ERROR("Failed to make EGL context current: %d", eglGetError());
         return -1;
     }
+
+    LV_LOG_USER("EGL initialized successfully");
 
     return 0;
 }
