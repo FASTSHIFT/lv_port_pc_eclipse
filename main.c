@@ -27,7 +27,7 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static lv_disp_t* hal_init(int32_t w, int32_t h);
+static void hal_init(int32_t w, int32_t h);
 
 /**********************
  *  STATIC VARIABLES
@@ -70,6 +70,7 @@ int main(int argc, const char** argv)
     int height = 480;
     const char* demo_name = "widgets";
     const char* touchdev = NULL;
+    const char* fbdev = NULL;
 
     struct {
         const char* name;
@@ -93,6 +94,7 @@ int main(int argc, const char** argv)
         OPT_INTEGER(0, "height", &height, "Set display height", NULL, 0, 0),
         OPT_STRING('d', "demo", &demo_name, "Set demo name", NULL, 0, 0),
         OPT_STRING('t', "touch", &touchdev, "Set touch device", NULL, 0, 0),
+        OPT_STRING(0, "fbdev", &fbdev, "Set framebuffer device", NULL, 0, 0),
         OPT_END(),
     };
 
@@ -107,8 +109,13 @@ int main(int argc, const char** argv)
     /*Create a default group for keyboard navigation*/
     lv_group_set_default(lv_group_create());
 
-    /*Initialize the HAL (display, input devices, tick) for LVGL*/
-    hal_init(width, height);
+    if (fbdev) {
+        lv_display_t * disp = lv_linux_fbdev_create();
+        lv_linux_fbdev_set_file(disp, fbdev);
+    } else {
+        /*Initialize the HAL (display, input devices, tick) for LVGL*/
+        hal_init(width, height);
+    }
 
     if (touchdev) {
         lv_indev_t* indev = lv_evdev_create(LV_INDEV_TYPE_POINTER, touchdev);
@@ -166,7 +173,7 @@ int main(int argc, const char** argv)
 /**
  * Initialize the Hardware Abstraction Layer (HAL) forLVGL
  */
-static lv_disp_t* hal_init(int32_t w, int32_t h)
+static void hal_init(int32_t w, int32_t h)
 {
 #if LV_USE_SDL
     lv_disp_t* disp = lv_sdl_window_create(w, h);
@@ -216,6 +223,4 @@ static lv_disp_t* hal_init(int32_t w, int32_t h)
 #ifdef LV_USE_RPI_PORT
     rpi_port_init(w, h);
 #endif
-
-    return NULL;
 }
