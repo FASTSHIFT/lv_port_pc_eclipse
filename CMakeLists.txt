@@ -39,7 +39,6 @@ if(ENABLE_RPI_PORT)
     set(VC_INCLUDE_DIR /opt/vc/include)
   else()
     message(STATUS "BCM_HOST_LIB not found, using custom location")
-    add_definitions(-D__VCCOREVER__=0)
     link_directories(${EXTERNAL_SOURCE_DIR}/rpi_port/vc/lib)
     set(VC_INCLUDE_DIR ${EXTERNAL_SOURCE_DIR}/rpi_port/vc/include)
 

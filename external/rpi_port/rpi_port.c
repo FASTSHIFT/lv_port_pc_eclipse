@@ -11,6 +11,12 @@
 
 #include "lvgl/lvgl.h"
 #include "lvgl/src/draw/nanovg/lv_draw_nanovg.h"
+
+/* Avoid warning about __VCCOREVER__ not being defined */
+#ifndef __VCCOREVER__
+#define __VCCOREVER__ 0
+#endif
+
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <bcm_host.h>
