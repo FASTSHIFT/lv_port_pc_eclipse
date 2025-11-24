@@ -88,7 +88,7 @@
  *====================*/
 
 /** Default display refresh, input device read and animation step period. */
-#define LV_DEF_REFR_PERIOD  16      /**< [ms] */
+#define LV_DEF_REFR_PERIOD  1      /**< [ms] */
 
 /** Default Dots Per Inch. Used to initialize default sizes such as widgets sized, style paddings.
  * (Not so important, you can adjust it to modify default sizes and spaces.) */
@@ -1058,7 +1058,7 @@
 #define LV_USE_SNAPSHOT 0
 
 /** 1: Enable system monitor component */
-#define LV_USE_SYSMON   0
+#define LV_USE_SYSMON   1
 #if LV_USE_SYSMON
     /** Get the idle percentage. E.g. uint32_t my_get_idle(void); */
     #define LV_SYSMON_GET_IDLE lv_os_get_idle_percent
@@ -1072,12 +1072,12 @@
 
     /** 1: Show CPU usage and FPS count.
      *  - Requires `LV_USE_SYSMON = 1` */
-    #define LV_USE_PERF_MONITOR 0
+    #define LV_USE_PERF_MONITOR 1
     #if LV_USE_PERF_MONITOR
         #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
 
         /** 0: Displays performance data on the screen; 1: Prints performance data using log. */
-        #define LV_USE_PERF_MONITOR_LOG_MODE 0
+        #define LV_USE_PERF_MONITOR_LOG_MODE 1
     #endif
 
     /** 1: Show used memory and memory fragmentation.
@@ -1226,7 +1226,7 @@
  *==================*/
 
 /** Use SDL to open window on PC and handle mouse and keyboard. */
-#define LV_USE_SDL              0
+#define LV_USE_SDL              1
 #if LV_USE_SDL
     #define LV_SDL_INCLUDE_PATH     <SDL2/SDL.h>
     #define LV_SDL_RENDER_MODE      LV_DISPLAY_RENDER_MODE_FULL   /**< LV_DISPLAY_RENDER_MODE_DIRECT is recommended for best performance */
@@ -1311,7 +1311,7 @@
 #endif
 
 /** Driver for /dev/dri/card */
-#define LV_USE_LINUX_DRM        1
+#define LV_USE_LINUX_DRM        0
 
 #if LV_USE_LINUX_DRM
 
@@ -1390,7 +1390,7 @@
 #endif
 
 /** Use a generic OpenGL driver that can be used to embed in other applications or used with GLFW/EGL */
-#define LV_USE_OPENGLES   1
+#define LV_USE_OPENGLES   0
 #if LV_USE_OPENGLES
     #define LV_USE_OPENGLES_DEBUG        1    /**< Enable or disable debug for opengles */
 #endif
