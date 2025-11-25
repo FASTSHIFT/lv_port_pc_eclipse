@@ -10,6 +10,8 @@ set(CMAKE_CXX_STANDARD 17)
 option(ENABLE_DEBUG "Enable debug build" OFF)
 option(ENABLE_RPI_PORT "Enable Raspberry Pi port" OFF)
 option(ENABLE_FREETYPE "Enable freetype library" OFF)
+option(ENABLE_PROFILER "Enable LVGL profiler" OFF)
+option(ENABLE_SYSMON "Enable LVGL system monitor" OFF)
 
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
@@ -58,6 +60,16 @@ if(ENABLE_RPI_PORT)
         ${RPI_CXX_COMPILER}
         CACHE FILEPATH "C++ compiler" FORCE)
   endif()
+endif()
+
+if(ENABLE_PROFILER)
+  message(STATUS "LVGL Profiler enabled")
+  add_definitions(-DLV_USE_PROFILER=1)
+endif()
+
+if(ENABLE_SYSMON)
+  message(STATUS "LVGL System Monitor enabled")
+  add_definitions(-DLV_USE_SYSMON=1)
 endif()
 
 # Warning flags

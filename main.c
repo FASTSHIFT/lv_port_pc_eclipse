@@ -71,6 +71,8 @@ int main(int argc, const char** argv)
     const char* demo_name = "widgets";
     const char* touchdev = NULL;
     const char* fbdev = NULL;
+    bool enable_profiler = false;
+    bool enable_sysmon = false;
 
     struct {
         const char* name;
@@ -95,6 +97,8 @@ int main(int argc, const char** argv)
         OPT_STRING('d', "demo", &demo_name, "Set demo name", NULL, 0, 0),
         OPT_STRING('t', "touch", &touchdev, "Set touch device", NULL, 0, 0),
         OPT_STRING(0, "fbdev", &fbdev, "Set framebuffer device", NULL, 0, 0),
+        OPT_BOOLEAN(0, "profiler", &enable_profiler, "Enable profiler", NULL, 0, 0),
+        OPT_BOOLEAN(0, "sysmon", &enable_sysmon, "Enable system monitor", NULL, 0, 0),
         OPT_END(),
     };
 
@@ -106,16 +110,24 @@ int main(int argc, const char** argv)
         return -1;
     }
 
+#if LV_USE_PROFILER
+    lv_profiler_builtin_set_enable(enable_profiler);
+#endif
+
     /*Create a default group for keyboard navigation*/
     lv_group_set_default(lv_group_create());
 
     if (fbdev) {
-        lv_display_t * disp = lv_linux_fbdev_create();
+        lv_display_t* disp = lv_linux_fbdev_create();
         lv_linux_fbdev_set_file(disp, fbdev);
     } else {
         /*Initialize the HAL (display, input devices, tick) for LVGL*/
         hal_init(width, height);
     }
+
+#if LV_USE_SYSMON
+    enable_sysmon ? lv_sysmon_show_performance(NULL) : lv_sysmon_hide_performance(NULL);
+#endif
 
     if (touchdev) {
         lv_indev_t* indev = lv_evdev_create(LV_INDEV_TYPE_POINTER, touchdev);

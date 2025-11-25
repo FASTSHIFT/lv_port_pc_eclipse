@@ -1060,7 +1060,9 @@
 #define LV_USE_SNAPSHOT 0
 
 /** 1: Enable system monitor component */
-#define LV_USE_SYSMON   1
+#ifdef LV_USE_SYSMON
+#define LV_USE_SYSMON   0
+#endif
 #if LV_USE_SYSMON
     /** Get the idle percentage. E.g. uint32_t my_get_idle(void); */
     #define LV_SYSMON_GET_IDLE lv_os_get_idle_percent
@@ -1092,7 +1094,9 @@
 #endif /*LV_USE_SYSMON*/
 
 /** 1: Enable runtime performance profiler */
+#ifndef LV_USE_PROFILER
 #define LV_USE_PROFILER 0
+#endif
 #if LV_USE_PROFILER
     /** 1: Enable the built-in profiler */
     #define LV_USE_PROFILER_BUILTIN 1
@@ -1100,7 +1104,7 @@
         /** Default profiler trace buffer size */
         #define LV_PROFILER_BUILTIN_BUF_SIZE (512 * 1024)     /**< [bytes] */
         #define LV_PROFILER_BUILTIN_DEFAULT_ENABLE 1
-        #define LV_USE_PROFILER_BUILTIN_POSIX 0 /**< Enable POSIX profiler port */
+        #define LV_USE_PROFILER_BUILTIN_POSIX 1 /**< Enable POSIX profiler port */
     #endif
 
     /** Header to include for profiler */
