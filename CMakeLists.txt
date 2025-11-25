@@ -111,7 +111,7 @@ if(ENABLE_RPI_PORT)
   set(SOURCES ${SOURCES} ${EXTERNAL_SOURCE_DIR}/rpi_port/rpi_port.c)
 
   # RPI specific libraries
-  set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host)
+  set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host vchiq_arm vcos)
 else()
   find_package(SDL2 REQUIRED)
   include_directories(${SDL2_INCLUDE_DIRS})
