@@ -1060,7 +1060,7 @@
 #define LV_USE_SNAPSHOT 0
 
 /** 1: Enable system monitor component */
-#ifdef LV_USE_SYSMON
+#ifndef LV_USE_SYSMON
 #define LV_USE_SYSMON   0
 #endif
 #if LV_USE_SYSMON
