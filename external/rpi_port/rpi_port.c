@@ -31,6 +31,14 @@
  *      TYPEDEFS
  **********************/
 
+#ifdef USE_EGL_DISPMANX_WINDOW_T
+typedef struct {
+   DISPMANX_ELEMENT_HANDLE_T element;
+   int width;   /* This is necessary because dispmanx elements are not queriable. */
+   int height;
+} EGL_DISPMANX_WINDOW_T;
+#endif
+
 /**********************
  *  STATIC PROTOTYPES
  **********************/
@@ -172,7 +180,7 @@ static int init_egl(uint32_t width, uint32_t height)
     nativewindow.height = height;
     vc_dispmanx_update_submit_sync(dispman_update);
 
-    surface = eglCreateWindowSurface(display, config, &nativewindow, NULL);
+    surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)&nativewindow, NULL);
     if (surface == EGL_NO_SURFACE) {
         LV_LOG_ERROR("Failed to create EGL surface: %d", eglGetError());
         return -1;
