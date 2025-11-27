@@ -37,21 +37,12 @@ if(ENABLE_RPI_PORT)
   find_library(BCM_HOST_LIB bcm_host PATHS /opt/vc/lib)
   if(BCM_HOST_LIB)
     message(STATUS "BCM_HOST_LIB found at ${BCM_HOST_LIB}")
-    link_directories(${BCM_HOST_LIB})
-
-    if(${BCM_HOST_LIB} MATCHES "/opt/vc/lib")
-      message(STATUS "Using system BCM library location")
-      include_directories(/opt/vc/include)
-    else()
-      message(STATUS "Using /usr/include BCM library location")
-
-      # New version of bcm_host library not having EGL_DISPMANX_WINDOW_T type definition
-      add_definitions(-DUSE_EGL_DISPMANX_WINDOW_T=1)
-    endif()
+    link_directories(/opt/vc/lib)
+    set(VC_INCLUDE_DIR /opt/vc/include)
   else()
     message(STATUS "BCM_HOST_LIB not found, using custom location")
     link_directories(${EXTERNAL_SOURCE_DIR}/rpi_port/vc/lib)
-    include_directories(${EXTERNAL_SOURCE_DIR}/rpi_port/vc/include)
+    set(VC_INCLUDE_DIR ${EXTERNAL_SOURCE_DIR}/rpi_port/vc/include)
 
     # Set cross-compilation toolchain using find_program
     find_program(RPI_C_COMPILER arm-linux-gnueabihf-gcc)
@@ -127,6 +118,8 @@ if(ENABLE_FREETYPE)
 endif()
 
 if(ENABLE_RPI_PORT)
+  include_directories(${VC_INCLUDE_DIR})
+
   set(SOURCES ${SOURCES} ${EXTERNAL_SOURCE_DIR}/rpi_port/rpi_port.c)
 
   # RPI specific libraries
