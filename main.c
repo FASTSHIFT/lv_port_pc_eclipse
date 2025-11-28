@@ -85,7 +85,7 @@ int main(int argc, const char** argv)
         { "benchmark", lv_demo_benchmark },
 #endif
 #if LV_USE_DEMO_VECTOR_GRAPHIC
-        { "vector_graphic", lv_demo_vector_graphic_buffered },
+        { "vector_graphic", lv_demo_vector_graphic_not_buffered },
 #endif
         { NULL, NULL }
     };
