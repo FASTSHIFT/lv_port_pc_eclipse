@@ -131,6 +131,7 @@ static int init_egl(uint32_t width, uint32_t height)
         EGL_BLUE_SIZE, 8,
         EGL_ALPHA_SIZE, 8,
         EGL_STENCIL_SIZE, 8,
+        EGL_SAMPLES, 4, /* 4x MSAA */
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
         EGL_NONE
     };
@@ -184,6 +185,10 @@ static int init_egl(uint32_t width, uint32_t height)
         LV_LOG_ERROR("Failed to make EGL context current: %d", eglGetError());
         return -1;
     }
+
+#if LV_DEF_REFR_PERIOD <= 1
+    eglSwapInterval(display, 0);
+#endif
 
     LV_LOG_USER("EGL initialized successfully");
 
