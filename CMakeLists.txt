@@ -8,10 +8,10 @@ set(CMAKE_CXX_STANDARD 17)
 # Platform config Common
 
 option(ENABLE_DEBUG "Enable debug build" OFF)
-option(ENABLE_RPI_PORT "Enable Raspberry Pi port" OFF)
 option(ENABLE_FREETYPE "Enable freetype library" OFF)
 option(ENABLE_PROFILER "Enable LVGL profiler" OFF)
 option(ENABLE_SYSMON "Enable LVGL system monitor" OFF)
+option(ENABLE_RPI_PORT "Enable Raspberry Pi port" OFF)
 
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
@@ -125,14 +125,13 @@ if(ENABLE_RPI_PORT)
   # RPI specific libraries
   set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host vchiq_arm vcos)
 else()
+  add_definitions(-DLV_USE_OPENGLES=1 -DLV_USE_GLFW=1)
+
   find_package(SDL2 REQUIRED)
   include_directories(${SDL2_INCLUDE_DIRS})
 
-  find_package(JPEG REQUIRED)
-  include_directories(${JPEG_INCLUDE_DIR})
-
-  find_package(PNG REQUIRED)
-  include_directories(${PNG_INCLUDE_DIR})
+  find_package(glfw3 REQUIRED)
+  set(GLFW_LIBRARIES glfw)
 
   # OpenGL
   find_package(OpenGL REQUIRED)
@@ -154,6 +153,11 @@ else()
   pkg_check_modules(EGL REQUIRED egl)
   include_directories(${EGL_INCLUDE_DIRS})
 
+  find_package(JPEG REQUIRED)
+  include_directories(${JPEG_INCLUDE_DIR})
+
+  find_package(PNG REQUIRED)
+  include_directories(${PNG_INCLUDE_DIR})
 endif()
 
 # Subdirectory
@@ -175,6 +179,7 @@ target_link_libraries(
           ${RPI_LIBS}
           ${OPENGL_LIBRARIES}
           ${GLEW_LIBRARIES}
+          ${GLFW_LIBRARIES}
           ${DRM_LIBRARIES}
           ${GBM_LIBRARIES}
           ${EGL_LIBRARIES}

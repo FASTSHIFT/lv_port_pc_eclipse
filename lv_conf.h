@@ -1319,8 +1319,9 @@
 #endif
 
 /** Driver for /dev/dri/card */
+#ifndef LV_USE_LINUX_DRM
 #define LV_USE_LINUX_DRM        0
-
+#endif
 #if LV_USE_LINUX_DRM
 
     /* Use the MESA GBM library to allocate DMA buffers that can be
@@ -1398,14 +1399,17 @@
 #endif
 
 /** Use a generic OpenGL driver that can be used to embed in other applications or used with GLFW/EGL */
+#ifndef LV_USE_OPENGLES
 #define LV_USE_OPENGLES   0
+#endif
 #if LV_USE_OPENGLES
     #define LV_USE_OPENGLES_DEBUG        1    /**< Enable or disable debug for opengles */
 #endif
 
 /** Use GLFW to open window on PC and handle mouse and keyboard. Requires*/
+#ifndef LV_USE_GLFW
 #define LV_USE_GLFW   0
-
+#endif
 
 /** QNX Screen display and input drivers */
 #define LV_USE_QNX              0
