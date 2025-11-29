@@ -30,6 +30,7 @@ typedef struct {
     const char* evdev;
     int width;
     int height;
+    int rotation;
 } hal_cfg_t;
 
 /**********************
@@ -88,6 +89,7 @@ int main(int argc, const char** argv)
         OPT_HELP(),
         OPT_INTEGER(0, "width", &hal_cfg.width, "Set display width", NULL, 0, 0),
         OPT_INTEGER(0, "height", &hal_cfg.height, "Set display height", NULL, 0, 0),
+        OPT_INTEGER('r', "rotation", &hal_cfg.rotation, "Set display rotation", NULL, 0, 0),
         OPT_STRING('d', "demo", &demo_name, "Set demo name", NULL, 0, 0),
         OPT_STRING(0, "hal", &hal_cfg.name, "Set HAL name", NULL, 0, 0),
         OPT_STRING(0, "fbdev", &hal_cfg.fbdev, "Set framebuffer device", NULL, 0, 0),
@@ -252,6 +254,11 @@ static bool hal_init(const hal_cfg_t* cfg)
                 break;
             }
         }
+    }
+
+    if (cfg->rotation) {
+        lv_display_set_matrix_rotation(NULL, true);
+        lv_display_set_rotation(NULL, (lv_display_rotation_t)(cfg->rotation % 4));
     }
 
     if (cfg->evdev) {
