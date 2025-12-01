@@ -77,7 +77,6 @@ int main(int argc, const char** argv)
     lv_init();
 
     hal_cfg_t hal_cfg = { 0 };
-    hal_cfg.name = "sdl";
     hal_cfg.width = 640;
     hal_cfg.height = 480;
 
@@ -221,6 +220,12 @@ static bool hal_rpi_port_init(const hal_cfg_t* cfg)
 }
 #endif
 
+static bool hal_dummy_init(const hal_cfg_t* cfg)
+{
+    LV_LOG_WARN("No HAL selected, using dummy display");
+    return true;
+}
+
 static bool hal_init(const hal_cfg_t* cfg)
 {
     /*Create a default group for keyboard navigation*/
@@ -230,6 +235,9 @@ static bool hal_init(const hal_cfg_t* cfg)
         const char* name;
         bool (*func)(const hal_cfg_t* cfg);
     } hal_init_funcs[] = {
+#ifdef LV_USE_RPI_PORT
+        { "rpi", hal_rpi_port_init },
+#endif
 #if LV_USE_SDL
         { "sdl", hal_sdl_init },
 #endif
@@ -239,19 +247,21 @@ static bool hal_init(const hal_cfg_t* cfg)
 #if LV_USE_GLFW
         { "glfw", hal_glfw_init },
 #endif
-#ifdef LV_USE_RPI_PORT
-        { "rpi_port", hal_rpi_port_init },
-#endif
+        { NULL, hal_dummy_init }
     };
 
     if (cfg->fbdev) {
         lv_display_t* disp = lv_linux_fbdev_create();
         lv_linux_fbdev_set_file(disp, cfg->fbdev);
     } else {
-        for (int i = 0; i < sizeof(hal_init_funcs) / sizeof(hal_init_funcs[0]); i++) {
-            if (lv_strcmp(cfg->name, hal_init_funcs[i].name) == 0) {
-                hal_init_funcs[i].func(cfg);
-                break;
+        if (!cfg->name) {
+            hal_init_funcs[0].func(cfg);
+        } else {
+            for (int i = 0; i < sizeof(hal_init_funcs) / sizeof(hal_init_funcs[0]); i++) {
+                if (lv_strcmp(cfg->name, hal_init_funcs[i].name) == 0) {
+                    hal_init_funcs[i].func(cfg);
+                    break;
+                }
             }
         }
     }
