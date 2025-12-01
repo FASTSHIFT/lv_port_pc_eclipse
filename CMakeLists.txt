@@ -12,6 +12,7 @@ option(ENABLE_FREETYPE "Enable freetype library" OFF)
 option(ENABLE_PROFILER "Enable LVGL profiler" OFF)
 option(ENABLE_SYSMON "Enable LVGL system monitor" OFF)
 option(ENABLE_RPI_PORT "Enable Raspberry Pi port" OFF)
+option(ENABLE_GPROF "Enable GProf Sanitizer" OFF)
 
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
@@ -70,6 +71,13 @@ endif()
 if(ENABLE_SYSMON)
   message(STATUS "LVGL System Monitor enabled")
   add_definitions(-DLV_USE_SYSMON=1)
+endif()
+
+if(ENABLE_GPROF)
+  message(STATUS "GProf enabled")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 endif()
 
 # Warning flags

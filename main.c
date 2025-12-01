@@ -12,6 +12,7 @@
 #include "external/rpi_port/rpi_port.h"
 #include "lvgl/demos/lv_demos.h"
 #include "lvgl/lvgl.h"
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -36,6 +37,8 @@ typedef struct {
 /**********************
  *  STATIC PROTOTYPES
  **********************/
+
+static void sigint_handler(int sig);
 static bool hal_init(const hal_cfg_t* cfg);
 static bool demo_create(const char* demo_name);
 
@@ -73,6 +76,8 @@ static bool demo_create(const char* demo_name);
 
 int main(int argc, const char** argv)
 {
+    signal(SIGINT, sigint_handler);
+
     /*Initialize LVGL*/
     lv_init();
 
@@ -147,6 +152,13 @@ int main(int argc, const char** argv)
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+
+static void sigint_handler(int sig)
+{
+    LV_UNUSED(sig);
+    /* Trigger gprof data write */
+    exit(0);
+}
 
 #if LV_USE_SDL
 static bool hal_sdl_init(const hal_cfg_t* cfg)
