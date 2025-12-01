@@ -86,8 +86,8 @@ int main(int argc, const char** argv)
     hal_cfg.height = 480;
 
     const char* demo_name = "widgets";
-    bool enable_profiler = false;
-    bool enable_sysmon = false;
+    int enable_profiler = 0;
+    int enable_sysmon = 0;
 
     struct argparse_option options[] = {
         OPT_HELP(),
