@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 /*********************
@@ -295,6 +296,223 @@ static bool hal_init(const hal_cfg_t* cfg)
     return true;
 }
 
+#if LV_USE_DEMO_GLTF
+
+#define GLTF_MAX_PATH_LEN 512
+
+typedef struct {
+    char name[256];
+    bool is_dir;
+} gltf_file_entry_t;
+
+typedef struct {
+    lv_obj_t* browser_cont;
+    lv_obj_t* path_label;
+    lv_obj_t* file_list;
+    lv_obj_t* gltf_obj;
+    lv_obj_t* back_btn;
+    char current_path[GLTF_MAX_PATH_LEN];
+} gltf_ctx_t;
+
+static void gltf_browser_update(gltf_ctx_t* ctx);
+
+static void gltf_back_btn_event_cb(lv_event_t* e)
+{
+    gltf_ctx_t* ctx = lv_event_get_user_data(e);
+    if (ctx->gltf_obj) {
+        lv_obj_delete(ctx->gltf_obj);
+        ctx->gltf_obj = NULL;
+    }
+    if (ctx->back_btn) {
+        lv_obj_delete(ctx->back_btn);
+        ctx->back_btn = NULL;
+    }
+    if (ctx->browser_cont) {
+        lv_obj_remove_flag(ctx->browser_cont, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static void gltf_load_model(gltf_ctx_t* ctx, const char* path)
+{
+    LV_LOG_USER("Loading GLTF model: %s", path);
+
+    /* Hide browser */
+    if (ctx->browser_cont) {
+        lv_obj_add_flag(ctx->browser_cont, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    /* Load GLTF */
+    ctx->gltf_obj = lv_demo_gltf(path);
+
+    /* Create back button */
+    ctx->back_btn = lv_button_create(lv_screen_active());
+    lv_obj_set_size(ctx->back_btn, 80, 40);
+    lv_obj_align(ctx->back_btn, LV_ALIGN_TOP_LEFT, 10, 10);
+    lv_obj_add_event_cb(ctx->back_btn, gltf_back_btn_event_cb, LV_EVENT_CLICKED, ctx);
+
+    lv_obj_t* label = lv_label_create(ctx->back_btn);
+    lv_label_set_text(label, LV_SYMBOL_LEFT " Back");
+    lv_obj_center(label);
+}
+
+static void gltf_list_item_event_cb(lv_event_t* e)
+{
+    gltf_file_entry_t* entry = lv_obj_get_user_data(lv_event_get_current_target(e));
+    gltf_ctx_t* ctx = lv_event_get_user_data(e);
+    if (!entry)
+        return;
+
+    if (entry->is_dir) {
+        /* Navigate into directory */
+        size_t cur_len = lv_strlen(ctx->current_path);
+        if (cur_len > 0 && ctx->current_path[cur_len - 1] != '/') {
+            lv_strcat(ctx->current_path, "/");
+        }
+        lv_strcat(ctx->current_path, entry->name);
+        gltf_browser_update(ctx);
+    } else {
+        /* Load GLTF file */
+        char full_path[GLTF_MAX_PATH_LEN];
+        lv_snprintf(full_path, sizeof(full_path), "%s/%s", ctx->current_path, entry->name);
+        gltf_load_model(ctx, full_path);
+    }
+}
+
+static void gltf_parent_dir_event_cb(lv_event_t* e)
+{
+    gltf_ctx_t* ctx = lv_event_get_user_data(e);
+    /* Go to parent directory */
+    /* Path format: A:/xxx/yyy */
+    char* path_start = ctx->current_path + 2; /* Skip "A:" */
+    char* last_slash = strrchr(path_start, '/');
+
+    if (last_slash && last_slash != path_start) {
+        /* Not at root, go up one level */
+        *last_slash = '\0';
+    } else {
+        /* At root or one level deep, go to root */
+        lv_strlcpy(ctx->current_path, "A:.", sizeof(ctx->current_path));
+    }
+    gltf_browser_update(ctx);
+}
+
+static const char* get_file_icon(const char* filename, bool is_dir)
+{
+    if (is_dir) {
+        return LV_SYMBOL_DIRECTORY;
+    }
+
+    /* Get extension using LVGL API */
+    const char* ext = lv_fs_get_ext(filename);
+    if (ext && (lv_strcmp(ext, "gltf") == 0 || lv_strcmp(ext, "glb") == 0)) {
+        return LV_SYMBOL_IMAGE;
+    }
+    return LV_SYMBOL_FILE;
+}
+
+static void gltf_browser_update(gltf_ctx_t* ctx)
+{
+    lv_fs_dir_t dir;
+    lv_fs_res_t res;
+    char fn[256];
+
+    /* Update path label - show path without 'A:' prefix */
+    lv_label_set_text(ctx->path_label, ctx->current_path);
+
+    /* Clear existing list items (skip the first item which is "..") */
+    uint32_t child_cnt = lv_obj_get_child_count(ctx->file_list);
+    for (int i = child_cnt - 1; i >= 1; i--) {
+        lv_obj_t* child = lv_obj_get_child(ctx->file_list, i);
+        lv_obj_delete(child);
+    }
+
+    /* Open directory using LVGL FS API */
+    res = lv_fs_dir_open(&dir, ctx->current_path);
+    if (res != LV_FS_RES_OK) {
+        LV_LOG_ERROR("Failed to open directory: %s (res=%d)", ctx->current_path, res);
+        lv_list_add_text(ctx->file_list, "Failed to open directory");
+        return;
+    }
+
+    static gltf_file_entry_t entries[256];
+    int file_count = 0;
+
+    /* Read directory entries */
+    while (file_count < sizeof(entries) / sizeof(entries[0])) {
+        res = lv_fs_dir_read(&dir, fn, sizeof(fn));
+        if (res != LV_FS_RES_OK || fn[0] == '\0') {
+            break;
+        }
+
+        /* Check if it's a directory (first char is '/') */
+        bool is_dir = (fn[0] == '/');
+        const char* name = is_dir ? (fn + 1) : fn; /* Skip leading '/' for directories */
+
+        /* Skip . and .. */
+        if (lv_strcmp(name, ".") == 0 || lv_strcmp(name, "..") == 0) {
+            continue;
+        }
+
+        lv_strlcpy(entries[file_count].name, name, sizeof(entries[file_count].name));
+        entries[file_count].is_dir = is_dir;
+
+        const char* icon = get_file_icon(entries[file_count].name, is_dir);
+        lv_obj_t* btn = lv_list_add_button(ctx->file_list, icon, entries[file_count].name);
+        lv_obj_set_user_data(btn, &entries[file_count]);
+        lv_obj_add_event_cb(btn, gltf_list_item_event_cb, LV_EVENT_CLICKED, ctx);
+
+        file_count++;
+    }
+
+    lv_fs_dir_close(&dir);
+
+    if (file_count == 0) {
+        lv_list_add_text(ctx->file_list, "Empty directory");
+    }
+}
+
+static void demo_gltf(void)
+{
+    static gltf_ctx_t gltf_ctx;
+    lv_memzero(&gltf_ctx, sizeof(gltf_ctx));
+    gltf_ctx_t* ctx = &gltf_ctx;
+
+    /* Start from root */
+    lv_strlcpy(ctx->current_path, "A:gltfs", sizeof(ctx->current_path));
+
+    /* Create browser container */
+    ctx->browser_cont = lv_obj_create(lv_screen_active());
+    lv_obj_set_size(ctx->browser_cont, LV_PCT(90), LV_PCT(90));
+    lv_obj_center(ctx->browser_cont);
+    lv_obj_set_flex_flow(ctx->browser_cont, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_all(ctx->browser_cont, 10, 0);
+    lv_obj_set_style_pad_gap(ctx->browser_cont, 5, 0);
+
+    /* Title */
+    lv_obj_t* title = lv_label_create(ctx->browser_cont);
+    lv_label_set_text(title, "GLTF File Browser");
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_16, 0);
+
+    /* Current path label */
+    ctx->path_label = lv_label_create(ctx->browser_cont);
+    lv_label_set_long_mode(ctx->path_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_obj_set_width(ctx->path_label, LV_PCT(100));
+    lv_obj_set_style_text_color(ctx->path_label, lv_palette_main(LV_PALETTE_BLUE), 0);
+
+    /* File list */
+    ctx->file_list = lv_list_create(ctx->browser_cont);
+    lv_obj_set_width(ctx->file_list, LV_PCT(100));
+    lv_obj_set_flex_grow(ctx->file_list, 1);
+
+    /* Add parent directory button */
+    lv_obj_t* parent_btn = lv_list_add_button(ctx->file_list, LV_SYMBOL_UP, "..");
+    lv_obj_add_event_cb(parent_btn, gltf_parent_dir_event_cb, LV_EVENT_CLICKED, &gltf_ctx);
+
+    /* Populate file list */
+    gltf_browser_update(&gltf_ctx);
+}
+#endif
+
 static bool demo_create(const char* demo_name)
 {
     struct {
@@ -309,6 +527,9 @@ static bool demo_create(const char* demo_name)
 #endif
 #if LV_USE_DEMO_VECTOR_GRAPHIC
         { "vector_graphic", lv_demo_vector_graphic_not_buffered },
+#endif
+#if LV_USE_DEMO_GLTF
+        { "gltf", demo_gltf },
 #endif
         { NULL, NULL }
     };
