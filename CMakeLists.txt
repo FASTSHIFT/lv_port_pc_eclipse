@@ -162,7 +162,7 @@ if(ENABLE_RPI_PORT)
   set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host vchiq_arm vcos)
   message(STATUS "RPI_LIBS: ${RPI_LIBS}")
 else()
-  add_definitions(-DLV_USE_OPENGLES=1 -DLV_SDL_USE_EGL=1)
+  add_definitions(-DLV_USE_OPENGLES=1 -DLV_SDL_USE_EGL=1 -DLV_USE_EGL=1)
 
   find_package(SDL2 REQUIRED)
   include_directories(${SDL2_INCLUDE_DIRS})
@@ -195,13 +195,17 @@ else()
 
   find_package(PNG REQUIRED)
   include_directories(${PNG_INCLUDE_DIR})
+
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(WEBP REQUIRED libwebp)
+  include_directories(${WEBP_INCLUDE_DIRS})
 endif()
 
 # Subdirectory
 add_subdirectory(${PROJECT_SOURCE_DIR}/lvgl ${PROJECT_BINARY_DIR}/build_lvgl)
 
 if(ENABLE_GLTF)
-  target_link_libraries(lvgl PRIVATE fastgltf)
+  target_link_libraries(lvgl PRIVATE fastgltf ${WEBP_LIBRARIES})
 endif()
 
 # Executable
