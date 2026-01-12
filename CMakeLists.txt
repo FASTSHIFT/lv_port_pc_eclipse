@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 project(Simulator)
 
 # C/C++ version
@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(ENABLE_DEBUG "Enable debug build" OFF)
 option(ENABLE_FREETYPE "Enable freetype library" OFF)
+option(ENABLE_GLTF "Enable FastGLTF library" OFF)
 option(ENABLE_PROFILER "Enable LVGL profiler" OFF)
 option(ENABLE_SYSMON "Enable LVGL system monitor" OFF)
 option(ENABLE_RPI_PORT "Enable Raspberry Pi port" OFF)
@@ -123,6 +124,33 @@ if(ENABLE_FREETYPE)
     -DFT_CONFIG_OPTIONS_H=<lvgl/src/libs/freetype/ftoption.h>)
   add_subdirectory(${EXTERNAL_SOURCE_DIR}/freetype
                    ${PROJECT_BINARY_DIR}/build_freetype)
+  message(STATUS "Freetype enabled")
+endif()
+
+if(ENABLE_GLTF)
+  # GLTF
+  add_definitions(-DLV_USE_GLTF=1)
+
+  # Use local simdjson 2.2.3 to satisfy fastgltf 0.8.0 requirement for
+  # get_available_implementations
+  set(SIMDJSON_ENABLE_TESTING
+      OFF
+      CACHE BOOL "Disable simdjson testing")
+  add_subdirectory(${EXTERNAL_SOURCE_DIR}/simdjson)
+  if(TARGET simdjson AND NOT TARGET simdjson::simdjson)
+    add_library(simdjson::simdjson ALIAS simdjson)
+  endif()
+
+  # Use system include for fastgltf to suppress warnings in header files
+  include_directories(SYSTEM ${EXTERNAL_SOURCE_DIR}/fastgltf/include)
+
+  # Propagate configuration to fastgltf via options
+  set(FASTGLTF_ENABLE_DEPRECATED_EXT ON CACHE BOOL "Enable deprecated extensions" FORCE)
+  
+  add_subdirectory(${EXTERNAL_SOURCE_DIR}/fastgltf
+                   ${PROJECT_BINARY_DIR}/build_fastgltf)
+  target_compile_options(fastgltf PRIVATE -w)
+  message(STATUS "FastGLTF enabled")
 endif()
 
 if(ENABLE_RPI_PORT)
@@ -132,6 +160,7 @@ if(ENABLE_RPI_PORT)
 
   # RPI specific libraries
   set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host vchiq_arm vcos)
+  message(STATUS "RPI_LIBS: ${RPI_LIBS}")
 else()
   add_definitions(-DLV_USE_OPENGLES=1 -DLV_SDL_USE_EGL=1)
 
@@ -170,6 +199,10 @@ endif()
 
 # Subdirectory
 add_subdirectory(${PROJECT_SOURCE_DIR}/lvgl ${PROJECT_BINARY_DIR}/build_lvgl)
+
+if(ENABLE_GLTF)
+  target_link_libraries(lvgl PRIVATE fastgltf)
+endif()
 
 # Executable
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)

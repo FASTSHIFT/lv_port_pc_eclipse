@@ -850,7 +850,11 @@
 
 #define LV_USE_WIN        1
 
-#define LV_USE_3DTEXTURE  0
+#ifdef LV_USE_OPENGLES && LV_USE_OPENGLES
+    #define LV_USE_3DTEXTURE  1
+#else
+    #define LV_USE_3DTEXTURE  0
+#endif
 
 /*==================
  * THEMES
@@ -1037,7 +1041,9 @@
 #define LV_USE_RLOTTIE 0
 
 /** Requires `LV_USE_3DTEXTURE = 1` */
-#define LV_USE_GLTF  0
+#ifndef LV_USE_GLTF
+    #define LV_USE_GLTF  0
+#endif
 
 /** Enable Vector Graphic APIs
  *  Requires `LV_USE_MATRIX = 1`
@@ -1430,7 +1436,7 @@
 
 /** Use a generic OpenGL driver that can be used to embed in other applications or used with GLFW/EGL */
 #ifndef LV_USE_OPENGLES
-#define LV_USE_OPENGLES   0
+#define LV_USE_OPENGLES   1
 #endif
 #if LV_USE_OPENGLES
     #define LV_USE_OPENGLES_DEBUG        1    /**< Enable or disable debug for opengles */
@@ -1500,7 +1506,7 @@
     #define LV_USE_DEMO_VECTOR_GRAPHIC  LV_USE_VECTOR_GRAPHIC
 
     /** GLTF demo */
-    #define LV_USE_DEMO_GLTF            0
+    #define LV_USE_DEMO_GLTF            LV_USE_GLTF
 
     /*---------------------------
      * Demos from lvgl/lv_demos
