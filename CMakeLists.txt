@@ -195,16 +195,17 @@ else()
 
   find_package(PNG REQUIRED)
   include_directories(${PNG_INCLUDE_DIR})
-
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(WEBP REQUIRED libwebp)
-  include_directories(${WEBP_INCLUDE_DIRS})
 endif()
 
 # Subdirectory
 add_subdirectory(${PROJECT_SOURCE_DIR}/lvgl ${PROJECT_BINARY_DIR}/build_lvgl)
 
 if(ENABLE_GLTF)
+  # WebP for GLTF textures
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(WEBP REQUIRED libwebp)
+  include_directories(${WEBP_INCLUDE_DIRS})
+
   target_link_libraries(lvgl PRIVATE fastgltf ${WEBP_LIBRARIES})
 endif()
 
