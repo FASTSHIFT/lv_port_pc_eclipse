@@ -133,7 +133,7 @@ if(ENABLE_RPI_PORT)
   # RPI specific libraries
   set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host vchiq_arm vcos)
 else()
-  add_definitions(-DLV_USE_OPENGLES=1)
+  add_definitions(-DLV_USE_OPENGLES=1 -DLV_SDL_USE_EGL=1)
 
   find_package(SDL2 REQUIRED)
   include_directories(${SDL2_INCLUDE_DIRS})
