@@ -850,11 +850,11 @@
 
 #define LV_USE_WIN        1
 
-#ifdef LV_USE_OPENGLES && LV_USE_OPENGLES
-    #define LV_USE_3DTEXTURE  1
-#else
-    #define LV_USE_3DTEXTURE  0
-#endif
+/** Enable 3D texture rendering with NanoVG (independent of OpenGLES driver) */
+#define LV_USE_3DTEXTURE  LV_USE_DRAW_NANOVG
+
+/** Enable cgltf library for glTF model loading */
+#define LV_USE_CGLTF      1
 
 /*==================
  * THEMES
@@ -1116,7 +1116,7 @@
         #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
 
         /** 0: Displays performance data on the screen; 1: Prints performance data using log. */
-        #define LV_USE_PERF_MONITOR_LOG_MODE 1
+        #define LV_USE_PERF_MONITOR_LOG_MODE 0
     #endif
 
     /** 1: Show used memory and memory fragmentation.
@@ -1507,6 +1507,9 @@
 
     /** GLTF demo */
     #define LV_USE_DEMO_GLTF            LV_USE_GLTF
+
+    /** NanoVG GLTF demo (using cgltf and NanoVG 3D extension) */
+    #define LV_USE_DEMO_NANOVG_GLTF     (LV_USE_DRAW_NANOVG && LV_USE_3DTEXTURE && LV_USE_CGLTF)
 
     /*---------------------------
      * Demos from lvgl/lv_demos

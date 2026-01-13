@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(ENABLE_DEBUG "Enable debug build" OFF)
 option(ENABLE_FREETYPE "Enable freetype library" OFF)
-option(ENABLE_GLTF "Enable FastGLTF library" OFF)
+option(ENABLE_FASTGLTF "Enable FastGLTF library" OFF)
 option(ENABLE_PROFILER "Enable LVGL profiler" OFF)
 option(ENABLE_SYSMON "Enable LVGL system monitor" OFF)
 option(ENABLE_RPI_PORT "Enable Raspberry Pi port" OFF)
@@ -127,9 +127,10 @@ if(ENABLE_FREETYPE)
   message(STATUS "Freetype enabled")
 endif()
 
-if(ENABLE_GLTF)
+if(ENABLE_FASTGLTF)
   # GLTF
   add_definitions(-DLV_USE_GLTF=1)
+  add_definitions(-DLV_USE_OPENGLES=1 -DLV_USE_EGL=1)
 
   # Use local simdjson 2.2.3 to satisfy fastgltf 0.8.0 requirement for
   # get_available_implementations
@@ -162,7 +163,7 @@ if(ENABLE_RPI_PORT)
   set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host vchiq_arm vcos)
   message(STATUS "RPI_LIBS: ${RPI_LIBS}")
 else()
-  add_definitions(-DLV_USE_OPENGLES=1 -DLV_SDL_USE_EGL=1 -DLV_USE_EGL=1)
+  add_definitions(-DLV_SDL_USE_EGL=1)
 
   find_package(SDL2 REQUIRED)
   include_directories(${SDL2_INCLUDE_DIRS})
@@ -200,7 +201,7 @@ endif()
 # Subdirectory
 add_subdirectory(${PROJECT_SOURCE_DIR}/lvgl ${PROJECT_BINARY_DIR}/build_lvgl)
 
-if(ENABLE_GLTF)
+if(ENABLE_FASTGLTF)
   # WebP for GLTF textures
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(WEBP REQUIRED libwebp)

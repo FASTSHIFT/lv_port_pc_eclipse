@@ -296,7 +296,9 @@ static bool hal_init(const hal_cfg_t* cfg)
     return true;
 }
 
-#if LV_USE_DEMO_GLTF
+#if LV_USE_DEMO_GLTF || LV_USE_DEMO_NANOVG_GLTF
+
+#include "lvgl/demos/gltf/lv_demo_nanovg_3d.h"
 
 #define GLTF_MAX_PATH_LEN 512
 
@@ -341,8 +343,12 @@ static void gltf_load_model(gltf_ctx_t* ctx, const char* path)
         lv_obj_add_flag(ctx->browser_cont, LV_OBJ_FLAG_HIDDEN);
     }
 
-    /* Load GLTF */
+    /* Load GLTF - use NanoVG 3D if available, otherwise use original */
+#if LV_USE_DEMO_NANOVG_GLTF
+    ctx->gltf_obj = lv_demo_nanovg_3d(path);
+#elif LV_USE_DEMO_GLTF
     ctx->gltf_obj = lv_demo_gltf(path);
+#endif
 
     /* Create back button */
     ctx->back_btn = lv_button_create(lv_screen_active());
@@ -528,7 +534,7 @@ static bool demo_create(const char* demo_name)
 #if LV_USE_DEMO_VECTOR_GRAPHIC
         { "vector_graphic", lv_demo_vector_graphic_not_buffered },
 #endif
-#if LV_USE_DEMO_GLTF
+#if LV_USE_DEMO_GLTF || LV_USE_DEMO_NANOVG_GLTF
         { "gltf", demo_gltf },
 #endif
         { NULL, NULL }
