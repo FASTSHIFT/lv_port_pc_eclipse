@@ -854,7 +854,9 @@
 #define LV_USE_3DTEXTURE  LV_USE_DRAW_NANOVG
 
 /** Enable cgltf library for glTF model loading */
+#ifndef LV_USE_CGLTF
 #define LV_USE_CGLTF      1
+#endif
 
 /*==================
  * THEMES

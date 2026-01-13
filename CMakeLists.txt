@@ -129,7 +129,7 @@ endif()
 
 if(ENABLE_FASTGLTF)
   # GLTF
-  add_definitions(-DLV_USE_GLTF=1)
+  add_definitions(-DLV_USE_GLTF=1 -DLV_USE_CGLTF=0)
   add_definitions(-DLV_USE_OPENGLES=1 -DLV_USE_EGL=1)
 
   # Use local simdjson 2.2.3 to satisfy fastgltf 0.8.0 requirement for

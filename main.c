@@ -298,7 +298,9 @@ static bool hal_init(const hal_cfg_t* cfg)
 
 #if LV_USE_DEMO_GLTF || LV_USE_DEMO_NANOVG_GLTF
 
+#if LV_USE_DEMO_NANOVG_GLTF
 #include "lvgl/demos/gltf/lv_demo_nanovg_3d.h"
+#endif
 
 #define GLTF_MAX_PATH_LEN 512
 
