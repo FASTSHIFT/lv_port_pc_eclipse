@@ -145,11 +145,51 @@ if(ENABLE_GLTF)
   include_directories(SYSTEM ${EXTERNAL_SOURCE_DIR}/fastgltf/include)
 
   # Propagate configuration to fastgltf via options
-  set(FASTGLTF_ENABLE_DEPRECATED_EXT ON CACHE BOOL "Enable deprecated extensions" FORCE)
-  
+  set(FASTGLTF_ENABLE_DEPRECATED_EXT
+      ON
+      CACHE BOOL "Enable deprecated extensions" FORCE)
+
   add_subdirectory(${EXTERNAL_SOURCE_DIR}/fastgltf
                    ${PROJECT_BINARY_DIR}/build_fastgltf)
   target_compile_options(fastgltf PRIVATE -w)
+
+  # libwebp for GLTF textures (build from source)
+  set(WEBP_BUILD_ANIM_UTILS
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_CWEBP
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_DWEBP
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_GIF2WEBP
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_IMG2WEBP
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_VWEBP
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_WEBPINFO
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_WEBPMUX
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_EXTRAS
+      OFF
+      CACHE BOOL "" FORCE)
+  set(WEBP_BUILD_WEBP_JS
+      OFF
+      CACHE BOOL "" FORCE)
+  add_subdirectory(${EXTERNAL_SOURCE_DIR}/libwebp
+                   ${PROJECT_BINARY_DIR}/build_libwebp)
+  target_compile_options(webp PRIVATE -w)
+  target_compile_options(webpdecoder PRIVATE -w)
+  include_directories(${EXTERNAL_SOURCE_DIR}/libwebp/src)
+
   message(STATUS "FastGLTF enabled")
 endif()
 
@@ -201,12 +241,7 @@ endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/lvgl ${PROJECT_BINARY_DIR}/build_lvgl)
 
 if(ENABLE_GLTF)
-  # WebP for GLTF textures
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(WEBP REQUIRED libwebp)
-  include_directories(${WEBP_INCLUDE_DIRS})
-
-  target_link_libraries(lvgl PRIVATE fastgltf ${WEBP_LIBRARIES})
+  target_link_libraries(lvgl PRIVATE fastgltf webp)
 endif()
 
 # Executable
