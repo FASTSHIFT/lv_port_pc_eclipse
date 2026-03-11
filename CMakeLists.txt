@@ -14,6 +14,7 @@ option(ENABLE_PROFILER "Enable LVGL profiler" OFF)
 option(ENABLE_SYSMON "Enable LVGL system monitor" OFF)
 option(ENABLE_RPI_PORT "Enable Raspberry Pi port" OFF)
 option(ENABLE_GPROF "Enable GProf Sanitizer" OFF)
+option(ENABLE_NANOVG "Enable NanoVG library" ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
@@ -27,6 +28,13 @@ if(ENABLE_DEBUG)
 else()
   message(STATUS "Build type: Release")
   set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+if(ENABLE_NANOVG)
+  add_definitions(-DLV_USE_NANOVG=1)
+  message(STATUS "NanoVG enabled")
+else()
+  message(STATUS "NanoVG disabled")
 endif()
 
 set(EXTERNAL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/external)
@@ -146,8 +154,10 @@ if(ENABLE_FASTGLTF)
   include_directories(SYSTEM ${EXTERNAL_SOURCE_DIR}/fastgltf/include)
 
   # Propagate configuration to fastgltf via options
-  set(FASTGLTF_ENABLE_DEPRECATED_EXT ON CACHE BOOL "Enable deprecated extensions" FORCE)
-  
+  set(FASTGLTF_ENABLE_DEPRECATED_EXT
+      ON
+      CACHE BOOL "Enable deprecated extensions" FORCE)
+
   add_subdirectory(${EXTERNAL_SOURCE_DIR}/fastgltf
                    ${PROJECT_BINARY_DIR}/build_fastgltf)
   target_compile_options(fastgltf PRIVATE -w)
@@ -163,33 +173,35 @@ if(ENABLE_RPI_PORT)
   set(RPI_LIBS brcmEGL brcmGLESv2 m bcm_host vchiq_arm vcos)
   message(STATUS "RPI_LIBS: ${RPI_LIBS}")
 else()
-  add_definitions(-DLV_SDL_USE_EGL=1)
+  if(ENABLE_NANOVG)
+    add_definitions(-DLV_SDL_USE_EGL=1)
+
+    find_package(glfw3 REQUIRED)
+    set(GLFW_LIBRARIES glfw)
+
+    # OpenGL
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW REQUIRED)
+    find_package(glfw3 REQUIRED)
+
+    # DRM
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(DRM REQUIRED libdrm)
+    include_directories(${DRM_INCLUDE_DIRS})
+
+    # GBM
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GBM REQUIRED gbm)
+    include_directories(${GBM_INCLUDE_DIRS})
+
+    # EGL
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(EGL REQUIRED egl)
+    include_directories(${EGL_INCLUDE_DIRS})
+  endif()
 
   find_package(SDL2 REQUIRED)
   include_directories(${SDL2_INCLUDE_DIRS})
-
-  find_package(glfw3 REQUIRED)
-  set(GLFW_LIBRARIES glfw)
-
-  # OpenGL
-  find_package(OpenGL REQUIRED)
-  find_package(GLEW REQUIRED)
-  find_package(glfw3 REQUIRED)
-
-  # DRM
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(DRM REQUIRED libdrm)
-  include_directories(${DRM_INCLUDE_DIRS})
-
-  # GBM
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(GBM REQUIRED gbm)
-  include_directories(${GBM_INCLUDE_DIRS})
-
-  # EGL
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(EGL REQUIRED egl)
-  include_directories(${EGL_INCLUDE_DIRS})
 
   find_package(JPEG REQUIRED)
   include_directories(${JPEG_INCLUDE_DIR})

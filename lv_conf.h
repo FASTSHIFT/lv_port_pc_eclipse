@@ -1055,7 +1055,7 @@
 
 /** Enable ThorVG (vector graphics library) from the src/libs folder.
  *  Requires LV_USE_VECTOR_GRAPHIC */
-#define LV_USE_THORVG_INTERNAL 0
+#define LV_USE_THORVG_INTERNAL (!LV_USE_DRAW_NANOVG || !LV_USE_DRAW_VG_LITE)
 
 /** Enable ThorVG by assuming that its installed and linked to the project
  *  Requires LV_USE_VECTOR_GRAPHIC */
@@ -1063,7 +1063,7 @@
 
 /** Enable NanoVG (vector graphics library) */
 #ifndef LV_USE_NANOVG
-#define LV_USE_NANOVG 1
+#define LV_USE_NANOVG 0
 #endif
 
 /** Use lvgl built-in LZ4 lib */
