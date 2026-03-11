@@ -299,16 +299,18 @@
 #define LV_USE_DRAW_SDL 0
 
 /** Use VG-Lite GPU. */
+#ifndef LV_USE_DRAW_VG_LITE
 #define LV_USE_DRAW_VG_LITE 0
+#endif
 #if LV_USE_DRAW_VG_LITE
     /** Enable VG-Lite custom external 'gpu_init()' function */
-    #define LV_VG_LITE_USE_GPU_INIT 0
+    #define LV_VG_LITE_USE_GPU_INIT 1
 
     /** Enable VG-Lite assert. */
-    #define LV_VG_LITE_USE_ASSERT 0
+    #define LV_VG_LITE_USE_ASSERT 1
 
     /** VG-Lite flush commit trigger threshold. GPU will try to batch these many draw tasks. */
-    #define LV_VG_LITE_FLUSH_MAX_COUNT 8
+    #define LV_VG_LITE_FLUSH_MAX_COUNT 0
 
     /** Enable border to simulate shadow.
      *  NOTE: which usually improves performance,
@@ -353,7 +355,7 @@
 
     /** Use ThorVG (a software vector library) as VG-Lite driver to allow testing VGLite on PC
      *  Requires: LV_USE_THORVG_INTERNAL or LV_USE_THORVG_EXTERNAL */
-    #define LV_USE_VG_LITE_THORVG   0
+    #define LV_USE_VG_LITE_THORVG   1
     #if LV_USE_VG_LITE_THORVG
         /** Enable LVGL's blend mode support */
         #define LV_VG_LITE_THORVG_LVGL_BLEND_SUPPORT 0
@@ -1055,7 +1057,7 @@
 
 /** Enable ThorVG (vector graphics library) from the src/libs folder.
  *  Requires LV_USE_VECTOR_GRAPHIC */
-#define LV_USE_THORVG_INTERNAL (!LV_USE_DRAW_NANOVG || !LV_USE_DRAW_VG_LITE)
+#define LV_USE_THORVG_INTERNAL (!LV_USE_DRAW_NANOVG || LV_USE_VG_LITE_THORVG)
 
 /** Enable ThorVG by assuming that its installed and linked to the project
  *  Requires LV_USE_VECTOR_GRAPHIC */
