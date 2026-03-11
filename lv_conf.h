@@ -855,7 +855,7 @@
 
 /** Enable cgltf library for glTF model loading */
 #ifndef LV_USE_CGLTF
-#define LV_USE_CGLTF      1
+#define LV_USE_CGLTF      0
 #endif
 
 /*==================
@@ -1062,7 +1062,9 @@
 #define LV_USE_THORVG_EXTERNAL 0
 
 /** Enable NanoVG (vector graphics library) */
+#ifndef LV_USE_NANOVG
 #define LV_USE_NANOVG 1
+#endif
 
 /** Use lvgl built-in LZ4 lib */
 #define LV_USE_LZ4_INTERNAL  0
