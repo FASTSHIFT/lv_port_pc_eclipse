@@ -11,6 +11,7 @@
 #include "external/argparse/argparse.h"
 #include "external/rpi_port/rpi_port.h"
 #include "lvgl/demos/lv_demos.h"
+#include "lvgl/examples/lv_examples.h"
 #include "lvgl/lvgl.h"
 #include <signal.h>
 #include <stdio.h>
