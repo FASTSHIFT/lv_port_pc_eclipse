@@ -242,7 +242,7 @@ target_link_libraries(
           lvgl::examples
           lvgl::demos
           lvgl::thorvg
-          $<$<BOOL:${ENABLE_FREETYPE}>:freetype::freetype>
+          $<$<BOOL:${ENABLE_FREETYPE}>:freetype>
           ${RPI_LIBS}
           ${OPENGL_LIBRARIES}
           ${GLEW_LIBRARIES}
